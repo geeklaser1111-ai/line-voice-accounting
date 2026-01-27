@@ -11,7 +11,6 @@ from linebot.v3.messaging import (
     QuickReply,
     QuickReplyItem,
     MessageAction,
-    URIAction,
 )
 from linebot.v3.webhooks import MessageEvent, AudioMessageContent, TextMessageContent
 from linebot.v3.exceptions import InvalidSignatureError
@@ -46,10 +45,10 @@ def get_quick_reply():
     return QuickReply(
         items=[
             QuickReplyItem(
-                action=MessageAction(label="📊 今日收支", text="今日收支")
+                action=MessageAction(label="今日收支", text="今日收支")
             ),
             QuickReplyItem(
-                action=URIAction(label="🌐 網頁版", uri="https://line-voice-accounting.onrender.com")
+                action=MessageAction(label="使用說明", text="使用說明")
             ),
         ]
     )
@@ -90,8 +89,22 @@ def handle_text_message(event: MessageEvent):
 
     reply_text = None
 
+    # 使用說明
+    if text == "使用說明":
+        reply_text = (
+            f"📝 語音記帳使用說明\n"
+            f"━━━━━━━━━━━━━━\n"
+            f"【記帳方式】\n"
+            f"• 語音：直接說「午餐 150」\n"
+            f"• 文字：輸入「午餐 150」\n"
+            f"• 收入：輸入「收入 薪水 50000」\n\n"
+            f"【查看記錄】\n"
+            f"• 輸入「今日收支」\n"
+            f"• 網頁版：\n"
+            f"line-voice-accounting.onrender.com"
+        )
     # 今日收支查詢
-    if text == "今日收支":
+    elif text == "今日收支":
         today = date.today().isoformat()
         summary = get_summary(user_id, start_date=today, end_date=today)
 
