@@ -7,11 +7,16 @@ from database import (
     get_recurring_transactions,
     get_recurring_transaction_by_id,
     update_recurring_transaction,
-    delete_recurring_transaction
+    delete_recurring_transaction,
+    execute_recurring_transactions
 )
+import os
 from routers.auth import get_user_id_from_request
 
 router = APIRouter(prefix="/api/recurring", tags=["固定收支"])
+
+# 用於驗證 cron job 的密鑰
+CRON_SECRET = os.getenv("CRON_SECRET", "your-secret-key")
 
 
 class RecurringCreate(BaseModel):
@@ -124,3 +129,22 @@ async def delete_recurring_endpoint(request: Request, recurring_id: int):
         raise HTTPException(status_code=404, detail="找不到此固定收支")
 
     return {"message": "刪除成功"}
+
+
+@router.post("/execute")
+async def execute_recurring_endpoint(request: Request, secret: str = None):
+    """
+    執行今天的固定收支（由 Cron Job 呼叫）
+    需要提供正確的 secret 參數
+    """
+    # 驗證密鑰
+    if secret != CRON_SECRET:
+        raise HTTPException(status_code=403, detail="無效的密鑰")
+
+    # 執行固定收支
+    executed_count = execute_recurring_transactions()
+
+    return {
+        "message": f"已執行 {executed_count} 筆固定收支",
+        "executed_count": executed_count
+    }
