@@ -106,17 +106,50 @@ def handle_text_message(event: MessageEvent):
             f"🌐 查看更多：\n"
             f"https://line-voice-accounting.onrender.com"
         )
+    else:
+        # 嘗試解析為記帳內容
+        parsed = parse_transaction(text)
 
-    # 如果有回覆內容才回覆
-    if reply_text:
-        with ApiClient(configuration) as api_client:
-            messaging_api = MessagingApi(api_client)
-            messaging_api.reply_message(
-                ReplyMessageRequest(
-                    reply_token=event.reply_token,
-                    messages=[TextMessage(text=reply_text, quick_reply=get_quick_reply())]
-                )
+        if parsed:
+            # 儲存到資料庫
+            transaction_id = add_transaction(
+                user_id=user_id,
+                trans_type=parsed.type,
+                amount=parsed.amount,
+                category=parsed.category,
+                description=parsed.description
             )
+
+            # 回覆確認訊息
+            type_text = "收入" if parsed.type == "income" else "支出"
+            reply_text = (
+                f"✅ 記帳成功！\n\n"
+                f"類型：{type_text}\n"
+                f"分類：{parsed.category}\n"
+                f"金額：${parsed.amount:,.0f}\n"
+                f"描述：{parsed.description}"
+            )
+        else:
+            # 無法解析，顯示使用說明
+            reply_text = (
+                f"📝 記帳小幫手\n"
+                f"━━━━━━━━━━━━━━\n"
+                f"請輸入記帳內容，例如：\n"
+                f"• 午餐 150\n"
+                f"• 交通費 50\n"
+                f"• 收入 薪水 50000\n\n"
+                f"或使用語音輸入更方便！"
+            )
+
+    # 回覆訊息（帶快速回覆按鈕）
+    with ApiClient(configuration) as api_client:
+        messaging_api = MessagingApi(api_client)
+        messaging_api.reply_message(
+            ReplyMessageRequest(
+                reply_token=event.reply_token,
+                messages=[TextMessage(text=reply_text, quick_reply=get_quick_reply())]
+            )
+        )
 
 
 @handler.add(MessageEvent, message=AudioMessageContent)
