@@ -8,6 +8,10 @@ from linebot.v3.messaging import (
     MessagingApi,
     ReplyMessageRequest,
     TextMessage,
+    QuickReply,
+    QuickReplyItem,
+    MessageAction,
+    URIAction,
 )
 from linebot.v3.webhooks import MessageEvent, AudioMessageContent, TextMessageContent
 from linebot.v3.exceptions import InvalidSignatureError
@@ -35,6 +39,20 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # LINE Bot 設定
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
+
+
+def get_quick_reply():
+    """取得常駐的快速回覆按鈕"""
+    return QuickReply(
+        items=[
+            QuickReplyItem(
+                action=MessageAction(label="📊 今日收支", text="今日收支")
+            ),
+            QuickReplyItem(
+                action=URIAction(label="🌐 網頁版", uri="https://line-voice-accounting.onrender.com")
+            ),
+        ]
+    )
 
 
 @app.get("/")
@@ -96,7 +114,7 @@ def handle_text_message(event: MessageEvent):
             messaging_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text=reply_text)]
+                    messages=[TextMessage(text=reply_text, quick_reply=get_quick_reply())]
                 )
             )
 
@@ -141,13 +159,13 @@ def handle_audio_message(event: MessageEvent):
         print(f"處理錯誤: {e}")
         reply_text = f"處理時發生錯誤，請稍後再試。\n錯誤：{str(e)}"
 
-    # 回覆訊息
+    # 回覆訊息（帶快速回覆按鈕）
     with ApiClient(configuration) as api_client:
         messaging_api = MessagingApi(api_client)
         messaging_api.reply_message(
             ReplyMessageRequest(
                 reply_token=event.reply_token,
-                messages=[TextMessage(text=reply_text)]
+                messages=[TextMessage(text=reply_text, quick_reply=get_quick_reply())]
             )
         )
 
