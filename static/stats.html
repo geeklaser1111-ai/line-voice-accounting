@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>統計圖表 - LINE 語音記帳</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- 側邊欄 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
+                        <circle cx="50" cy="50" r="45" fill="#06C755"/>
+                        <path d="M30 50 L45 65 L70 40" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>語音記帳</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/static/dashboard.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    <span>儀表板</span>
+                </a>
+                <a href="/static/transactions.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="6" x2="21" y2="6"/>
+                        <line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                    <span>記帳明細</span>
+                </a>
+                <a href="/static/stats.html" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    <span>統計圖表</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <img src="/static/img/default-avatar.png" alt="Avatar" class="user-avatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23ddd%22/><circle cx=%2250%22 cy=%2240%22 r=%2215%22 fill=%22%23999%22/><path d=%22M25 85 Q50 60 75 85%22 fill=%22%23999%22/></svg>'">
+                    <span class="user-name">載入中...</span>
+                </div>
+                <button class="btn-logout">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    登出
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主內容 -->
+        <main class="main-content">
+            <header class="page-header">
+                <h1 class="page-title">統計圖表</h1>
+                <p class="page-subtitle">視覺化您的收支狀況</p>
+            </header>
+
+            <!-- 篩選器 -->
+            <div class="filters">
+                <div class="filter-group">
+                    <label>時間範圍</label>
+                    <select id="timeRange" onchange="onTimeRangeChange()">
+                        <option value="month">本月</option>
+                        <option value="last_month">上個月</option>
+                        <option value="3months">近三個月</option>
+                        <option value="6months">近六個月</option>
+                        <option value="year">今年</option>
+                        <option value="custom">自訂</option>
+                    </select>
+                </div>
+                <div class="filter-group hidden" id="customDateRange">
+                    <label>開始日期</label>
+                    <input type="date" id="startDate">
+                    <label style="margin-left: 8px;">結束日期</label>
+                    <input type="date" id="endDate">
+                    <button class="btn btn-primary btn-sm" style="margin-left: 8px;" onclick="loadAllCharts()">套用</button>
+                </div>
+            </div>
+
+            <!-- 統計卡片 -->
+            <div class="stats-grid">
+                <div class="stat-card income">
+                    <div class="stat-label">總收入</div>
+                    <div class="stat-value" id="totalIncome">$0</div>
+                </div>
+                <div class="stat-card expense">
+                    <div class="stat-label">總支出</div>
+                    <div class="stat-value" id="totalExpense">$0</div>
+                </div>
+                <div class="stat-card balance">
+                    <div class="stat-label">結餘</div>
+                    <div class="stat-value" id="balance">$0</div>
+                </div>
+            </div>
+
+            <!-- 圖表區 -->
+            <div class="chart-grid">
+                <!-- 支出分類圓餅圖 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">支出分類分析</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" id="expenseCategoryContainer">
+                            <canvas id="expenseCategoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 收入分類圓餅圖 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">收入分類分析</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" id="incomeCategoryContainer">
+                            <canvas id="incomeCategoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 趨勢圖 -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h2 class="card-title">收支趨勢</h2>
+                    <div class="filter-group">
+                        <label>顯示方式</label>
+                        <select id="groupBy" onchange="loadTrendChart()">
+                            <option value="day">按日</option>
+                            <option value="week">按週</option>
+                            <option value="month">按月</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 400px;" id="trendContainer">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分類明細 -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h2 class="card-title">分類明細</h2>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>分類</th>
+                                    <th>類型</th>
+                                    <th class="text-right">金額</th>
+                                    <th class="text-right">筆數</th>
+                                    <th class="text-right">佔比</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categoryDetails">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">載入中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script>
+        let expenseCategoryChart = null;
+        let incomeCategoryChart = null;
+        let trendChart = null;
+
+        // 初始化
+        async function init() {
+            if (!await Auth.requireAuth()) return;
+
+            Auth.initUserDisplay();
+            Auth.bindLogoutButton();
+
+            // 設定預設日期
+            setDefaultDates();
+
+            // 載入所有圖表
+            await loadAllCharts();
+        }
+
+        // 設定預設日期
+        function setDefaultDates() {
+            document.getElementById('startDate').value = Utils.getMonthStart();
+            document.getElementById('endDate').value = Utils.getMonthEnd();
+        }
+
+        // 時間範圍變更
+        function onTimeRangeChange() {
+            const range = document.getElementById('timeRange').value;
+            const customRange = document.getElementById('customDateRange');
+            const today = new Date();
+            let startDate, endDate;
+
+            if (range === 'custom') {
+                customRange.classList.remove('hidden');
+                return;
+            }
+
+            customRange.classList.add('hidden');
+
+            switch (range) {
+                case 'month':
+                    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                    endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    break;
+                case 'last_month':
+                    startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+                    break;
+                case '3months':
+                    startDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+                    endDate = today;
+                    break;
+                case '6months':
+                    startDate = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+                    endDate = today;
+                    break;
+                case 'year':
+                    startDate = new Date(today.getFullYear(), 0, 1);
+                    endDate = today;
+                    break;
+            }
+
+            document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+            document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+
+            loadAllCharts();
+        }
+
+        // 取得日期參數
+        function getDateParams() {
+            return {
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value
+            };
+        }
+
+        // 載入所有圖表
+        async function loadAllCharts() {
+            await Promise.all([
+                loadSummary(),
+                loadExpenseCategoryChart(),
+                loadIncomeCategoryChart(),
+                loadTrendChart(),
+                loadCategoryDetails()
+            ]);
+        }
+
+        // 載入統計摘要
+        async function loadSummary() {
+            try {
+                const summary = await API.getSummary(getDateParams());
+
+                document.getElementById('totalIncome').textContent = Utils.formatMoney(summary.total_income);
+                document.getElementById('totalExpense').textContent = Utils.formatMoney(summary.total_expense);
+                document.getElementById('balance').textContent = Utils.formatMoney(summary.balance);
+            } catch (error) {
+                console.error('載入摘要失敗:', error);
+            }
+        }
+
+        // 載入支出分類圖表
+        async function loadExpenseCategoryChart() {
+            try {
+                const params = { ...getDateParams(), type: 'expense' };
+                const data = await API.getCategoryStats(params);
+
+                if (expenseCategoryChart) {
+                    expenseCategoryChart.destroy();
+                }
+
+                const container = document.getElementById('expenseCategoryContainer');
+
+                if (data.categories.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>此期間尚無支出記錄</p></div>';
+                    return;
+                }
+
+                container.innerHTML = '<canvas id="expenseCategoryChart"></canvas>';
+                const ctx = document.getElementById('expenseCategoryChart').getContext('2d');
+
+                const labels = data.categories.map(c => c.category);
+                const values = data.categories.map(c => c.total);
+                const colors = Utils.getChartColors(labels.length);
+
+                expenseCategoryChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: colors,
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.raw / total) * 100).toFixed(1);
+                                        return `${context.label}: ${Utils.formatMoney(context.raw)} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('載入支出分類圖表失敗:', error);
+            }
+        }
+
+        // 載入收入分類圖表
+        async function loadIncomeCategoryChart() {
+            try {
+                const params = { ...getDateParams(), type: 'income' };
+                const data = await API.getCategoryStats(params);
+
+                if (incomeCategoryChart) {
+                    incomeCategoryChart.destroy();
+                }
+
+                const container = document.getElementById('incomeCategoryContainer');
+
+                if (data.categories.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>此期間尚無收入記錄</p></div>';
+                    return;
+                }
+
+                container.innerHTML = '<canvas id="incomeCategoryChart"></canvas>';
+                const ctx = document.getElementById('incomeCategoryChart').getContext('2d');
+
+                const labels = data.categories.map(c => c.category);
+                const values = data.categories.map(c => c.total);
+                const colors = Utils.getChartColors(labels.length);
+
+                incomeCategoryChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: colors,
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.raw / total) * 100).toFixed(1);
+                                        return `${context.label}: ${Utils.formatMoney(context.raw)} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('載入收入分類圖表失敗:', error);
+            }
+        }
+
+        // 載入趨勢圖
+        async function loadTrendChart() {
+            try {
+                const groupBy = document.getElementById('groupBy').value;
+                const params = { ...getDateParams(), group_by: groupBy };
+                const data = await API.getDateStats(params);
+
+                if (trendChart) {
+                    trendChart.destroy();
+                }
+
+                const container = document.getElementById('trendContainer');
+
+                if (data.trends.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>此期間尚無記錄</p></div>';
+                    return;
+                }
+
+                container.innerHTML = '<canvas id="trendChart"></canvas>';
+                const ctx = document.getElementById('trendChart').getContext('2d');
+
+                const labels = data.trends.map(t => {
+                    if (groupBy === 'month') return t.date;
+                    if (groupBy === 'week') return `第${t.date.split('-')[1]}週`;
+                    return t.date.slice(5);
+                });
+                const incomeData = data.trends.map(t => t.income);
+                const expenseData = data.trends.map(t => t.expense);
+
+                trendChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: '收入',
+                                data: incomeData,
+                                backgroundColor: 'rgba(6, 199, 85, 0.8)',
+                                borderColor: '#06C755',
+                                borderWidth: 1
+                            },
+                            {
+                                label: '支出',
+                                data: expenseData,
+                                backgroundColor: 'rgba(231, 76, 60, 0.8)',
+                                borderColor: '#E74C3C',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value.toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('載入趨勢圖表失敗:', error);
+            }
+        }
+
+        // 載入分類明細
+        async function loadCategoryDetails() {
+            try {
+                const data = await API.getCategoryStats(getDateParams());
+                const tbody = document.getElementById('categoryDetails');
+
+                if (data.categories.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">此期間尚無記錄</td></tr>';
+                    return;
+                }
+
+                // 計算總額
+                const totalExpense = data.categories
+                    .filter(c => c.type === 'expense')
+                    .reduce((sum, c) => sum + c.total, 0);
+                const totalIncome = data.categories
+                    .filter(c => c.type === 'income')
+                    .reduce((sum, c) => sum + c.total, 0);
+
+                tbody.innerHTML = data.categories.map(c => {
+                    const total = c.type === 'expense' ? totalExpense : totalIncome;
+                    const percentage = total > 0 ? ((c.total / total) * 100).toFixed(1) : 0;
+
+                    return `
+                        <tr>
+                            <td>${c.category}</td>
+                            <td>
+                                <span class="badge badge-${c.type === 'income' ? 'income' : 'expense'}">
+                                    ${c.type === 'income' ? '收入' : '支出'}
+                                </span>
+                            </td>
+                            <td class="text-right ${c.type === 'income' ? 'text-success' : 'text-danger'}">
+                                ${Utils.formatMoney(c.total)}
+                            </td>
+                            <td class="text-right">${c.count}</td>
+                            <td class="text-right">${percentage}%</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('載入分類明細失敗:', error);
+            }
+        }
+
+        // 頁面載入時初始化
+        init();
+    </script>
+</body>
+</html>

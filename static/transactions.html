@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>記帳明細 - LINE 語音記帳</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- 側邊欄 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
+                        <circle cx="50" cy="50" r="45" fill="#06C755"/>
+                        <path d="M30 50 L45 65 L70 40" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>語音記帳</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/static/dashboard.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    <span>儀表板</span>
+                </a>
+                <a href="/static/transactions.html" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="6" x2="21" y2="6"/>
+                        <line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                    <span>記帳明細</span>
+                </a>
+                <a href="/static/stats.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    <span>統計圖表</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <img src="/static/img/default-avatar.png" alt="Avatar" class="user-avatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23ddd%22/><circle cx=%2250%22 cy=%2240%22 r=%2215%22 fill=%22%23999%22/><path d=%22M25 85 Q50 60 75 85%22 fill=%22%23999%22/></svg>'">
+                    <span class="user-name">載入中...</span>
+                </div>
+                <button class="btn-logout">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    登出
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主內容 -->
+        <main class="main-content">
+            <header class="page-header">
+                <h1 class="page-title">記帳明細</h1>
+                <p class="page-subtitle">管理您的收支記錄</p>
+            </header>
+
+            <!-- 操作列 -->
+            <div class="filters">
+                <div class="filter-group">
+                    <label>類型</label>
+                    <select id="filterType">
+                        <option value="">全部</option>
+                        <option value="income">收入</option>
+                        <option value="expense">支出</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>分類</label>
+                    <select id="filterCategory">
+                        <option value="">全部</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>開始日期</label>
+                    <input type="date" id="filterStartDate">
+                </div>
+                <div class="filter-group">
+                    <label>結束日期</label>
+                    <input type="date" id="filterEndDate">
+                </div>
+                <div class="filter-group" style="margin-left: auto;">
+                    <button class="btn btn-success" onclick="openAddModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        新增記帳
+                    </button>
+                    <div class="btn-group" style="margin-left: 8px;">
+                        <button class="btn btn-outline" onclick="exportCSV()">匯出 CSV</button>
+                        <button class="btn btn-outline" onclick="exportExcel()">匯出 Excel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 交易列表 -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>類型</th>
+                                    <th>分類</th>
+                                    <th>描述</th>
+                                    <th class="text-right">金額</th>
+                                    <th class="text-center">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsList">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">載入中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分頁 -->
+                    <div class="pagination" id="pagination"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 新增/編輯彈窗 -->
+    <div class="modal-overlay" id="transactionModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">新增記帳</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="transactionForm">
+                    <input type="hidden" id="transactionId">
+
+                    <div class="form-group">
+                        <label class="form-label">類型</label>
+                        <div class="form-row">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" name="type" value="expense" checked>
+                                <span class="badge badge-expense">支出</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" name="type" value="income">
+                                <span class="badge badge-income">收入</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">金額</label>
+                            <input type="number" id="amount" class="form-input" required min="1" step="1" placeholder="請輸入金額">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">分類</label>
+                            <select id="category" class="form-select" required>
+                                <option value="">請選擇分類</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">描述（選填）</label>
+                        <input type="text" id="description" class="form-input" placeholder="例如：午餐便當">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveTransaction()">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+        let userCategories = [];
+
+        // 初始化
+        async function init() {
+            if (!await Auth.requireAuth()) return;
+
+            Auth.initUserDisplay();
+            Auth.bindLogoutButton();
+
+            // 載入分類
+            await loadCategories();
+
+            // 綁定篩選器事件
+            document.getElementById('filterType').addEventListener('change', () => { currentPage = 1; loadTransactions(); });
+            document.getElementById('filterCategory').addEventListener('change', () => { currentPage = 1; loadTransactions(); });
+            document.getElementById('filterStartDate').addEventListener('change', () => { currentPage = 1; loadTransactions(); });
+            document.getElementById('filterEndDate').addEventListener('change', () => { currentPage = 1; loadTransactions(); });
+
+            // 類型切換時更新分類選項
+            document.querySelectorAll('input[name="type"]').forEach(radio => {
+                radio.addEventListener('change', updateCategoryOptions);
+            });
+
+            // 載入交易列表
+            await loadTransactions();
+        }
+
+        // 載入分類
+        async function loadCategories() {
+            try {
+                const data = await API.getCategories();
+                userCategories = data.categories;
+
+                // 更新篩選器
+                const filterCategory = document.getElementById('filterCategory');
+                userCategories.forEach(cat => {
+                    filterCategory.innerHTML += `<option value="${cat}">${cat}</option>`;
+                });
+            } catch (error) {
+                console.error('載入分類失敗:', error);
+            }
+        }
+
+        // 更新表單中的分類選項
+        function updateCategoryOptions() {
+            const type = document.querySelector('input[name="type"]:checked').value;
+            const categorySelect = document.getElementById('category');
+            const defaultCategories = Utils.defaultCategories[type] || [];
+
+            // 合併用戶分類和預設分類
+            const allCategories = [...new Set([...userCategories, ...defaultCategories])];
+
+            categorySelect.innerHTML = '<option value="">請選擇分類</option>';
+            allCategories.forEach(cat => {
+                categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+        }
+
+        // 載入交易列表
+        async function loadTransactions() {
+            try {
+                const params = {
+                    page: currentPage,
+                    per_page: 20
+                };
+
+                const filterType = document.getElementById('filterType').value;
+                const filterCategory = document.getElementById('filterCategory').value;
+                const filterStartDate = document.getElementById('filterStartDate').value;
+                const filterEndDate = document.getElementById('filterEndDate').value;
+
+                if (filterType) params.type = filterType;
+                if (filterCategory) params.category = filterCategory;
+                if (filterStartDate) params.start_date = filterStartDate;
+                if (filterEndDate) params.end_date = filterEndDate;
+
+                const data = await API.getTransactions(params);
+                totalPages = data.total_pages;
+
+                renderTransactions(data.items);
+                renderPagination();
+            } catch (error) {
+                console.error('載入交易失敗:', error);
+                Utils.showToast('載入失敗', 'error');
+            }
+        }
+
+        // 渲染交易列表
+        function renderTransactions(items) {
+            const tbody = document.getElementById('transactionsList');
+
+            if (items.length === 0) {
+                Utils.showEmpty(tbody.parentElement.parentElement, '尚無記帳記錄');
+                return;
+            }
+
+            tbody.innerHTML = items.map(t => `
+                <tr>
+                    <td>${Utils.formatDate(t.created_at)}</td>
+                    <td>
+                        <span class="badge badge-${t.type === 'income' ? 'income' : 'expense'}">
+                            ${t.type === 'income' ? '收入' : '支出'}
+                        </span>
+                    </td>
+                    <td>${t.category}</td>
+                    <td>${t.description || '-'}</td>
+                    <td class="text-right ${t.type === 'income' ? 'text-success' : 'text-danger'}">
+                        ${t.type === 'income' ? '+' : '-'}${Utils.formatMoney(t.amount)}
+                    </td>
+                    <td class="text-center">
+                        <button class="btn-icon" onclick="openEditModal(${t.id})" title="編輯">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        <button class="btn-icon danger" onclick="deleteTransaction(${t.id})" title="刪除">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 渲染分頁
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <button class="pagination-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一頁</button>
+            `;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += '<span class="pagination-info">...</span>';
+                }
+            }
+
+            html += `
+                <button class="pagination-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一頁</button>
+            `;
+
+            pagination.innerHTML = html;
+        }
+
+        // 跳轉頁面
+        function goToPage(page) {
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            loadTransactions();
+        }
+
+        // 開啟新增彈窗
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = '新增記帳';
+            document.getElementById('transactionId').value = '';
+            document.getElementById('transactionForm').reset();
+            document.querySelector('input[name="type"][value="expense"]').checked = true;
+            updateCategoryOptions();
+            document.getElementById('transactionModal').classList.add('active');
+        }
+
+        // 開啟編輯彈窗
+        async function openEditModal(id) {
+            try {
+                const transaction = await API.getTransaction(id);
+
+                document.getElementById('modalTitle').textContent = '編輯記帳';
+                document.getElementById('transactionId').value = id;
+                document.querySelector(`input[name="type"][value="${transaction.type}"]`).checked = true;
+                updateCategoryOptions();
+                document.getElementById('amount').value = transaction.amount;
+                document.getElementById('category').value = transaction.category;
+                document.getElementById('description').value = transaction.description || '';
+
+                document.getElementById('transactionModal').classList.add('active');
+            } catch (error) {
+                Utils.showToast('載入失敗', 'error');
+            }
+        }
+
+        // 關閉彈窗
+        function closeModal() {
+            document.getElementById('transactionModal').classList.remove('active');
+        }
+
+        // 儲存交易
+        async function saveTransaction() {
+            const id = document.getElementById('transactionId').value;
+            const type = document.querySelector('input[name="type"]:checked').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const category = document.getElementById('category').value;
+            const description = document.getElementById('description').value;
+
+            if (!amount || amount <= 0) {
+                Utils.showToast('請輸入有效金額', 'error');
+                return;
+            }
+
+            if (!category) {
+                Utils.showToast('請選擇分類', 'error');
+                return;
+            }
+
+            try {
+                const data = { type, amount, category, description };
+
+                if (id) {
+                    await API.updateTransaction(id, data);
+                    Utils.showToast('更新成功');
+                } else {
+                    await API.createTransaction(data);
+                    Utils.showToast('新增成功');
+                }
+
+                closeModal();
+                loadTransactions();
+                loadCategories(); // 重新載入分類
+            } catch (error) {
+                Utils.showToast(error.message, 'error');
+            }
+        }
+
+        // 刪除交易
+        async function deleteTransaction(id) {
+            if (!Utils.confirm('確定要刪除這筆記錄嗎？')) return;
+
+            try {
+                await API.deleteTransaction(id);
+                Utils.showToast('刪除成功');
+                loadTransactions();
+            } catch (error) {
+                Utils.showToast('刪除失敗', 'error');
+            }
+        }
+
+        // 匯出 CSV
+        function exportCSV() {
+            const params = getExportParams();
+            window.location.href = API.getExportCsvUrl(params);
+        }
+
+        // 匯出 Excel
+        function exportExcel() {
+            const params = getExportParams();
+            window.location.href = API.getExportExcelUrl(params);
+        }
+
+        // 取得匯出參數
+        function getExportParams() {
+            const params = {};
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+            if (startDate) params.start_date = startDate;
+            if (endDate) params.end_date = endDate;
+            return params;
+        }
+
+        // 頁面載入時初始化
+        init();
+    </script>
+</body>
+</html>

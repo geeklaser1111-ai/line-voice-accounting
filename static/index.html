@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINE 語音記帳 - 登入</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .features {
+            margin-top: 32px;
+            text-align: left;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .feature-item:last-child {
+            border-bottom: none;
+        }
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+        .feature-text h4 {
+            margin: 0;
+            font-size: 14px;
+            color: #333;
+        }
+        .feature-text p {
+            margin: 4px 0 0;
+            font-size: 12px;
+            color: #666;
+        }
+        .error-message {
+            background: #FFEBEE;
+            color: #E74C3C;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Logo -->
+            <svg class="login-logo" viewBox="0 0 100 100" fill="none">
+                <circle cx="50" cy="50" r="45" fill="#06C755"/>
+                <path d="M30 50 L45 65 L70 40" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+
+            <h1 class="login-title">LINE 語音記帳</h1>
+            <p class="login-subtitle">輕鬆管理您的收支</p>
+
+            <!-- 錯誤訊息 -->
+            <div id="errorMessage" class="error-message hidden"></div>
+
+            <!-- LINE 登入按鈕 -->
+            <a href="/auth/login" class="btn-line-login">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 5.82 2 10.5c0 3.94 3.18 7.27 7.5 8.16v3.09c0 .22.1.42.28.55.1.08.22.12.35.12.1 0 .2-.02.3-.07l4.2-2.1c3.95-.82 7.37-4.15 7.37-8.75C22 5.82 17.52 2 12 2z"/>
+                </svg>
+                使用 LINE 登入
+            </a>
+
+            <!-- 功能介紹 -->
+            <div class="features">
+                <div class="feature-item">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-text">
+                        <h4>完整記帳管理</h4>
+                        <p>查看、新增、編輯、刪除記帳</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📈</div>
+                    <div class="feature-text">
+                        <h4>統計圖表分析</h4>
+                        <p>圓餅圖、折線圖視覺化您的收支</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📥</div>
+                    <div class="feature-text">
+                        <h4>報表匯出</h4>
+                        <p>匯出 CSV / Excel 報表</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+        // 檢查 URL 參數中的錯誤
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        if (error) {
+            const errorMessage = document.getElementById('errorMessage');
+            const errorMessages = {
+                'invalid_state': '登入驗證失敗，請重試',
+                'token_exchange_failed': '取得授權失敗，請重試',
+                'profile_fetch_failed': '取得用戶資料失敗，請重試',
+                'access_denied': '您拒絕了授權請求',
+            };
+            errorMessage.textContent = errorMessages[error] || '登入失敗，請重試';
+            errorMessage.classList.remove('hidden');
+        }
+
+        // 檢查是否已登入
+        (async () => {
+            try {
+                await API.getCurrentUser();
+                // 已登入，導向儀表板
+                window.location.href = '/static/dashboard.html';
+            } catch (e) {
+                // 未登入，留在登入頁
+            }
+        })();
+    </script>
+</body>
+</html>

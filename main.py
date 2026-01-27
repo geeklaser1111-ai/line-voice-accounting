@@ -1,4 +1,6 @@
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 from linebot.v3 import WebhookHandler
 from linebot.v3.messaging import (
     Configuration,
@@ -15,7 +17,19 @@ from voice_handler import process_voice_message
 from parser import parse_transaction
 from database import add_transaction
 
+# 引入路由
+from routers import auth, transactions, stats, export
+
 app = FastAPI(title="LINE 語音記帳機器人")
+
+# 註冊路由
+app.include_router(auth.router)
+app.include_router(transactions.router)
+app.include_router(stats.router)
+app.include_router(export.router)
+
+# 掛載靜態檔案
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # LINE Bot 設定
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
@@ -24,6 +38,12 @@ handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 @app.get("/")
 async def root():
+    """首頁導向"""
+    return RedirectResponse(url="/static/index.html")
+
+
+@app.get("/health")
+async def health():
     """健康檢查"""
     return {"status": "ok", "message": "LINE 語音記帳機器人運作中"}
 

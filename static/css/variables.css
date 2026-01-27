@@ -1,0 +1,86 @@
+/* CSS 變數定義 */
+:root {
+    /* LINE 品牌色 */
+    --line-green: #06C755;
+    --line-green-dark: #05A847;
+    --line-green-light: #4CD97A;
+
+    /* 主題色 */
+    --primary: #4A90D9;
+    --primary-dark: #3A7BC8;
+    --primary-light: #6BA5E7;
+
+    /* 功能色 */
+    --success: #06C755;
+    --danger: #E74C3C;
+    --warning: #F39C12;
+    --info: #3498DB;
+
+    /* 收入/支出色 */
+    --income-color: #06C755;
+    --income-bg: #E8F5E9;
+    --expense-color: #E74C3C;
+    --expense-bg: #FFEBEE;
+
+    /* 灰階 */
+    --gray-50: #F8F9FA;
+    --gray-100: #F1F3F5;
+    --gray-200: #E9ECEF;
+    --gray-300: #DEE2E6;
+    --gray-400: #CED4DA;
+    --gray-500: #ADB5BD;
+    --gray-600: #868E96;
+    --gray-700: #495057;
+    --gray-800: #343A40;
+    --gray-900: #212529;
+
+    /* 文字色 */
+    --text-primary: #212529;
+    --text-secondary: #6C757D;
+    --text-muted: #ADB5BD;
+
+    /* 背景色 */
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F8F9FA;
+    --bg-tertiary: #E9ECEF;
+
+    /* 陰影 */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+    /* 圓角 */
+    --radius-sm: 4px;
+    --radius: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+
+    /* 間距 */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+
+    /* 字體 */
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-size-xs: 12px;
+    --font-size-sm: 14px;
+    --font-size-base: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+    --font-size-3xl: 30px;
+
+    /* 過渡 */
+    --transition-fast: 0.15s ease;
+    --transition: 0.3s ease;
+
+    /* 容器 */
+    --container-max-width: 1200px;
+    --sidebar-width: 250px;
+    --header-height: 60px;
+}

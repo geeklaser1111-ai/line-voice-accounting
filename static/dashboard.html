@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>儀表板 - LINE 語音記帳</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- 側邊欄 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
+                        <circle cx="50" cy="50" r="45" fill="#06C755"/>
+                        <path d="M30 50 L45 65 L70 40" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>語音記帳</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/static/dashboard.html" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    <span>儀表板</span>
+                </a>
+                <a href="/static/transactions.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="6" x2="21" y2="6"/>
+                        <line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                    <span>記帳明細</span>
+                </a>
+                <a href="/static/stats.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    <span>統計圖表</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <img src="/static/img/default-avatar.png" alt="Avatar" class="user-avatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23ddd%22/><circle cx=%2250%22 cy=%2240%22 r=%2215%22 fill=%22%23999%22/><path d=%22M25 85 Q50 60 75 85%22 fill=%22%23999%22/></svg>'">
+                    <span class="user-name">載入中...</span>
+                </div>
+                <button class="btn-logout">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    登出
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主內容 -->
+        <main class="main-content">
+            <header class="page-header">
+                <h1 class="page-title">儀表板</h1>
+                <p class="page-subtitle">本月收支概覽</p>
+            </header>
+
+            <!-- 統計卡片 -->
+            <div class="stats-grid">
+                <div class="stat-card income">
+                    <div class="stat-label">本月收入</div>
+                    <div class="stat-value" id="totalIncome">$0</div>
+                </div>
+                <div class="stat-card expense">
+                    <div class="stat-label">本月支出</div>
+                    <div class="stat-value" id="totalExpense">$0</div>
+                </div>
+                <div class="stat-card balance">
+                    <div class="stat-label">本月結餘</div>
+                    <div class="stat-value" id="balance">$0</div>
+                </div>
+            </div>
+
+            <!-- 圖表區 -->
+            <div class="chart-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">支出分類</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">收支趨勢</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 最近記帳 -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h2 class="card-title">最近記帳</h2>
+                    <a href="/static/transactions.html" class="btn btn-outline btn-sm">查看全部</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>類型</th>
+                                    <th>分類</th>
+                                    <th>描述</th>
+                                    <th class="text-right">金額</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentTransactions">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">載入中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script>
+        let categoryChart = null;
+        let trendChart = null;
+
+        // 初始化
+        async function init() {
+            // 檢查登入
+            if (!await Auth.requireAuth()) return;
+
+            // 顯示用戶資訊
+            Auth.initUserDisplay();
+            Auth.bindLogoutButton();
+
+            // 載入資料
+            await Promise.all([
+                loadSummary(),
+                loadCategoryChart(),
+                loadTrendChart(),
+                loadRecentTransactions()
+            ]);
+        }
+
+        // 載入統計摘要
+        async function loadSummary() {
+            try {
+                const params = {
+                    start_date: Utils.getMonthStart(),
+                    end_date: Utils.getMonthEnd()
+                };
+                const summary = await API.getSummary(params);
+
+                document.getElementById('totalIncome').textContent = Utils.formatMoney(summary.total_income);
+                document.getElementById('totalExpense').textContent = Utils.formatMoney(summary.total_expense);
+                document.getElementById('balance').textContent = Utils.formatMoney(summary.balance);
+            } catch (error) {
+                console.error('載入摘要失敗:', error);
+            }
+        }
+
+        // 載入分類圓餅圖
+        async function loadCategoryChart() {
+            try {
+                const params = {
+                    type: 'expense',
+                    start_date: Utils.getMonthStart(),
+                    end_date: Utils.getMonthEnd()
+                };
+                const data = await API.getCategoryStats(params);
+
+                if (categoryChart) {
+                    categoryChart.destroy();
+                }
+
+                const ctx = document.getElementById('categoryChart').getContext('2d');
+
+                if (data.categories.length === 0) {
+                    ctx.canvas.parentElement.innerHTML = '<div class="empty-state"><p>本月尚無支出記錄</p></div>';
+                    return;
+                }
+
+                const labels = data.categories.map(c => c.category);
+                const values = data.categories.map(c => c.total);
+                const colors = Utils.getChartColors(labels.length);
+
+                categoryChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: colors,
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right'
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('載入分類圖表失敗:', error);
+            }
+        }
+
+        // 載入趨勢圖
+        async function loadTrendChart() {
+            try {
+                const params = {
+                    start_date: Utils.getMonthStart(),
+                    end_date: Utils.getMonthEnd(),
+                    group_by: 'day'
+                };
+                const data = await API.getDateStats(params);
+
+                if (trendChart) {
+                    trendChart.destroy();
+                }
+
+                const ctx = document.getElementById('trendChart').getContext('2d');
+
+                if (data.trends.length === 0) {
+                    ctx.canvas.parentElement.innerHTML = '<div class="empty-state"><p>本月尚無記錄</p></div>';
+                    return;
+                }
+
+                const labels = data.trends.map(t => t.date.slice(5)); // 只顯示 MM-DD
+                const incomeData = data.trends.map(t => t.income);
+                const expenseData = data.trends.map(t => t.expense);
+
+                trendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: '收入',
+                                data: incomeData,
+                                borderColor: '#06C755',
+                                backgroundColor: 'rgba(6, 199, 85, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: '支出',
+                                data: expenseData,
+                                borderColor: '#E74C3C',
+                                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('載入趨勢圖表失敗:', error);
+            }
+        }
+
+        // 載入最近記帳
+        async function loadRecentTransactions() {
+            try {
+                const data = await API.getTransactions({ per_page: 5 });
+                const tbody = document.getElementById('recentTransactions');
+
+                if (data.items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">尚無記帳記錄</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.items.map(t => `
+                    <tr>
+                        <td>${Utils.formatDate(t.created_at)}</td>
+                        <td>
+                            <span class="badge badge-${t.type === 'income' ? 'income' : 'expense'}">
+                                ${t.type === 'income' ? '收入' : '支出'}
+                            </span>
+                        </td>
+                        <td>${t.category}</td>
+                        <td>${t.description || '-'}</td>
+                        <td class="text-right ${t.type === 'income' ? 'text-success' : 'text-danger'}">
+                            ${t.type === 'income' ? '+' : '-'}${Utils.formatMoney(t.amount)}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('載入最近記帳失敗:', error);
+            }
+        }
+
+        // 頁面載入時初始化
+        init();
+    </script>
+</body>
+</html>
