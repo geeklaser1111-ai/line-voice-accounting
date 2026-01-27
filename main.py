@@ -11,6 +11,7 @@ from linebot.v3.messaging import (
     QuickReply,
     QuickReplyItem,
     MessageAction,
+    URIAction,
 )
 from linebot.v3.webhooks import MessageEvent, AudioMessageContent, TextMessageContent
 from linebot.v3.exceptions import InvalidSignatureError
@@ -46,6 +47,9 @@ def get_quick_reply():
         items=[
             QuickReplyItem(
                 action=MessageAction(label="今日收支", text="今日收支")
+            ),
+            QuickReplyItem(
+                action=URIAction(label="查看網頁版", uri="https://line-voice-accounting.onrender.com")
             ),
             QuickReplyItem(
                 action=MessageAction(label="使用說明", text="使用說明")
