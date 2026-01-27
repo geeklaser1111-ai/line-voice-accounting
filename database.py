@@ -43,6 +43,35 @@ def init_db():
         )
     """)
 
+    # 預算設定表
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS budgets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            monthly_budget REAL NOT NULL DEFAULT 0,
+            category TEXT,
+            category_budget REAL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # 固定收支表
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS recurring_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            amount REAL NOT NULL,
+            category TEXT NOT NULL,
+            description TEXT,
+            day_of_month INTEGER NOT NULL DEFAULT 1,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            last_executed DATE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     # 建立索引
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_transactions_user_id
@@ -55,6 +84,14 @@ def init_db():
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_sessions_session_id
         ON user_sessions(session_id)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_budgets_user_id
+        ON budgets(user_id)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_recurring_user_id
+        ON recurring_transactions(user_id)
     """)
 
     conn.commit()
@@ -507,6 +544,262 @@ def get_all_transactions_for_export(
     conn.close()
 
     return [dict(row) for row in rows]
+
+
+# ============ 預算相關函式 ============
+
+def get_budget(user_id: str) -> Optional[dict]:
+    """取得用戶的預算設定"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT * FROM budgets
+        WHERE user_id = ? AND category IS NULL
+    """, (user_id,))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    return dict(row) if row else None
+
+
+def set_budget(user_id: str, monthly_budget: float) -> int:
+    """設定每月總預算"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 檢查是否已有預算設定
+    cursor.execute("""
+        SELECT id FROM budgets WHERE user_id = ? AND category IS NULL
+    """, (user_id,))
+
+    existing = cursor.fetchone()
+
+    if existing:
+        cursor.execute("""
+            UPDATE budgets
+            SET monthly_budget = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (monthly_budget, existing["id"]))
+        budget_id = existing["id"]
+    else:
+        cursor.execute("""
+            INSERT INTO budgets (user_id, monthly_budget)
+            VALUES (?, ?)
+        """, (user_id, monthly_budget))
+        budget_id = cursor.lastrowid
+
+    conn.commit()
+    conn.close()
+
+    return budget_id
+
+
+def get_budget_status(user_id: str) -> dict:
+    """取得預算使用狀況"""
+    # 取得預算設定
+    budget = get_budget(user_id)
+    monthly_budget = budget["monthly_budget"] if budget else 0
+
+    # 取得本月支出
+    today = datetime.now()
+    start_date = today.replace(day=1).strftime("%Y-%m-%d")
+    end_date = today.strftime("%Y-%m-%d")
+
+    summary = get_summary(user_id, start_date=start_date, end_date=end_date)
+    spent = summary["total_expense"]
+
+    remaining = monthly_budget - spent
+    percentage = (spent / monthly_budget * 100) if monthly_budget > 0 else 0
+
+    return {
+        "monthly_budget": monthly_budget,
+        "spent": spent,
+        "remaining": remaining,
+        "percentage": round(percentage, 1),
+        "is_over_budget": remaining < 0
+    }
+
+
+# ============ 固定收支相關函式 ============
+
+def add_recurring_transaction(
+    user_id: str,
+    trans_type: str,
+    amount: float,
+    category: str,
+    description: Optional[str] = None,
+    day_of_month: int = 1
+) -> int:
+    """新增固定收支"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO recurring_transactions
+        (user_id, type, amount, category, description, day_of_month)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (user_id, trans_type, amount, category, description, day_of_month))
+
+    recurring_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return recurring_id
+
+
+def get_recurring_transactions(user_id: str) -> list:
+    """取得用戶的固定收支列表"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT * FROM recurring_transactions
+        WHERE user_id = ? AND is_active = 1
+        ORDER BY day_of_month ASC
+    """, (user_id,))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [dict(row) for row in rows]
+
+
+def get_recurring_transaction_by_id(recurring_id: int, user_id: str) -> Optional[dict]:
+    """取得單筆固定收支"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT * FROM recurring_transactions
+        WHERE id = ? AND user_id = ?
+    """, (recurring_id, user_id))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    return dict(row) if row else None
+
+
+def update_recurring_transaction(
+    recurring_id: int,
+    user_id: str,
+    trans_type: Optional[str] = None,
+    amount: Optional[float] = None,
+    category: Optional[str] = None,
+    description: Optional[str] = None,
+    day_of_month: Optional[int] = None,
+    is_active: Optional[int] = None
+) -> bool:
+    """更新固定收支"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 確認記錄存在
+    cursor.execute("""
+        SELECT id FROM recurring_transactions WHERE id = ? AND user_id = ?
+    """, (recurring_id, user_id))
+
+    if not cursor.fetchone():
+        conn.close()
+        return False
+
+    updates = []
+    params = []
+
+    if trans_type is not None:
+        updates.append("type = ?")
+        params.append(trans_type)
+    if amount is not None:
+        updates.append("amount = ?")
+        params.append(amount)
+    if category is not None:
+        updates.append("category = ?")
+        params.append(category)
+    if description is not None:
+        updates.append("description = ?")
+        params.append(description)
+    if day_of_month is not None:
+        updates.append("day_of_month = ?")
+        params.append(day_of_month)
+    if is_active is not None:
+        updates.append("is_active = ?")
+        params.append(is_active)
+
+    if not updates:
+        conn.close()
+        return True
+
+    params.extend([recurring_id, user_id])
+    cursor.execute(f"""
+        UPDATE recurring_transactions
+        SET {", ".join(updates)}
+        WHERE id = ? AND user_id = ?
+    """, params)
+
+    conn.commit()
+    conn.close()
+    return True
+
+
+def delete_recurring_transaction(recurring_id: int, user_id: str) -> bool:
+    """刪除固定收支"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM recurring_transactions WHERE id = ? AND user_id = ?
+    """, (recurring_id, user_id))
+
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+
+    return deleted
+
+
+def execute_recurring_transactions():
+    """執行今天應該執行的固定收支（由排程呼叫）"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    today = datetime.now()
+    today_str = today.strftime("%Y-%m-%d")
+    day_of_month = today.day
+
+    # 找出今天要執行的固定收支
+    cursor.execute("""
+        SELECT * FROM recurring_transactions
+        WHERE is_active = 1
+        AND day_of_month = ?
+        AND (last_executed IS NULL OR last_executed < ?)
+    """, (day_of_month, today_str))
+
+    rows = cursor.fetchall()
+    executed_count = 0
+
+    for row in rows:
+        # 新增交易
+        cursor.execute("""
+            INSERT INTO transactions (user_id, type, amount, category, description)
+            VALUES (?, ?, ?, ?, ?)
+        """, (row["user_id"], row["type"], row["amount"], row["category"],
+              f"[固定] {row['description'] or row['category']}"))
+
+        # 更新最後執行日期
+        cursor.execute("""
+            UPDATE recurring_transactions
+            SET last_executed = ?
+            WHERE id = ?
+        """, (today_str, row["id"]))
+
+        executed_count += 1
+
+    conn.commit()
+    conn.close()
+
+    return executed_count
 
 
 # 初始化資料庫

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設定 - LINE 語音記帳</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- 側邊欄 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
+                        <circle cx="50" cy="50" r="45" fill="#06C755"/>
+                        <path d="M30 50 L45 65 L70 40" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>語音記帳</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/static/dashboard.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    <span>儀表板</span>
+                </a>
+                <a href="/static/transactions.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="6" x2="21" y2="6"/>
+                        <line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                    <span>記帳明細</span>
+                </a>
+                <a href="/static/stats.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    <span>統計圖表</span>
+                </a>
+                <a href="/static/settings.html" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    <span>設定</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <img src="/static/img/default-avatar.png" alt="Avatar" class="user-avatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23ddd%22/><circle cx=%2250%22 cy=%2240%22 r=%2215%22 fill=%22%23999%22/><path d=%22M25 85 Q50 60 75 85%22 fill=%22%23999%22/></svg>'">
+                    <span class="user-name">載入中...</span>
+                </div>
+                <button class="btn-logout">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    登出
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主內容 -->
+        <main class="main-content">
+            <header class="page-header">
+                <h1 class="page-title">設定</h1>
+                <p class="page-subtitle">管理預算與固定收支</p>
+            </header>
+
+            <!-- 預算設定 -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h2 class="card-title">預算設定</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">每月預算</label>
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <input type="number" id="monthlyBudget" class="form-input" style="max-width: 200px;" placeholder="0" min="0" step="1000">
+                            <button class="btn btn-primary" onclick="saveBudget()">儲存</button>
+                        </div>
+                    </div>
+
+                    <!-- 預算使用狀況 -->
+                    <div id="budgetStatus" class="mt-2" style="display: none;">
+                        <h4 style="margin-bottom: 12px;">本月預算使用狀況</h4>
+                        <div class="budget-progress">
+                            <div class="budget-bar">
+                                <div class="budget-bar-fill" id="budgetBarFill"></div>
+                            </div>
+                            <div class="budget-info">
+                                <span>已使用 <strong id="budgetSpent">$0</strong></span>
+                                <span>剩餘 <strong id="budgetRemaining">$0</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 固定收支 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">固定收支</h2>
+                    <button class="btn btn-success" onclick="openRecurringModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        新增
+                    </button>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-2">設定每月固定的收入或支出，系統會在指定日期自動記錄。</p>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>類型</th>
+                                    <th>分類</th>
+                                    <th>描述</th>
+                                    <th>金額</th>
+                                    <th>執行日</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recurringList">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">載入中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 新增/編輯固定收支彈窗 -->
+    <div class="modal-overlay" id="recurringModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="recurringModalTitle">新增固定收支</h3>
+                <button class="modal-close" onclick="closeRecurringModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="recurringForm">
+                    <input type="hidden" id="recurringId">
+
+                    <div class="form-group">
+                        <label class="form-label">類型</label>
+                        <div class="form-row">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" name="recurringType" value="expense" checked>
+                                <span class="badge badge-expense">支出</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" name="recurringType" value="income">
+                                <span class="badge badge-income">收入</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">金額</label>
+                            <input type="number" id="recurringAmount" class="form-input" required min="1" placeholder="請輸入金額">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">每月幾號</label>
+                            <select id="recurringDay" class="form-select" required>
+                                <option value="">請選擇</option>
+                                <script>
+                                    for (let i = 1; i <= 28; i++) {
+                                        document.write(`<option value="${i}">${i} 號</option>`);
+                                    }
+                                </script>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">分類</label>
+                        <input type="text" id="recurringCategory" class="form-input" required placeholder="例如：房租、訂閱服務">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">描述（選填）</label>
+                        <input type="text" id="recurringDescription" class="form-input" placeholder="例如：Netflix 訂閱">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeRecurringModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveRecurring()">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .budget-progress {
+            background: var(--bg-secondary);
+            padding: 16px;
+            border-radius: 8px;
+        }
+        .budget-bar {
+            height: 24px;
+            background: var(--gray-200);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .budget-bar-fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 12px;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+        .budget-bar-fill.warning {
+            background: var(--warning);
+        }
+        .budget-bar-fill.danger {
+            background: var(--danger);
+        }
+        .budget-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+    </style>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script>
+        // 擴展 API
+        API.getBudget = () => API.get('/api/budget');
+        API.setBudget = (data) => API.post('/api/budget', data);
+        API.getBudgetStatus = () => API.get('/api/budget/status');
+        API.getRecurring = () => API.get('/api/recurring');
+        API.createRecurring = (data) => API.post('/api/recurring', data);
+        API.updateRecurring = (id, data) => API.put(`/api/recurring/${id}`, data);
+        API.deleteRecurring = (id) => API.delete(`/api/recurring/${id}`);
+
+        // 初始化
+        async function init() {
+            if (!await Auth.requireAuth()) return;
+
+            Auth.initUserDisplay();
+            Auth.bindLogoutButton();
+
+            await Promise.all([
+                loadBudget(),
+                loadRecurring()
+            ]);
+        }
+
+        // 載入預算
+        async function loadBudget() {
+            try {
+                const budget = await API.getBudget();
+                document.getElementById('monthlyBudget').value = budget.monthly_budget || '';
+
+                if (budget.monthly_budget > 0) {
+                    await loadBudgetStatus();
+                }
+            } catch (error) {
+                console.error('載入預算失敗:', error);
+            }
+        }
+
+        // 載入預算狀況
+        async function loadBudgetStatus() {
+            try {
+                const status = await API.getBudgetStatus();
+
+                if (status.monthly_budget > 0) {
+                    document.getElementById('budgetStatus').style.display = 'block';
+                    document.getElementById('budgetSpent').textContent = Utils.formatMoney(status.spent);
+                    document.getElementById('budgetRemaining').textContent = Utils.formatMoney(status.remaining);
+
+                    const fill = document.getElementById('budgetBarFill');
+                    const percentage = Math.min(status.percentage, 100);
+                    fill.style.width = percentage + '%';
+
+                    fill.classList.remove('warning', 'danger');
+                    if (status.percentage >= 100) {
+                        fill.classList.add('danger');
+                    } else if (status.percentage >= 80) {
+                        fill.classList.add('warning');
+                    }
+                }
+            } catch (error) {
+                console.error('載入預算狀況失敗:', error);
+            }
+        }
+
+        // 儲存預算
+        async function saveBudget() {
+            const budget = parseFloat(document.getElementById('monthlyBudget').value) || 0;
+
+            try {
+                await API.setBudget({ monthly_budget: budget });
+                Utils.showToast('預算設定成功');
+                await loadBudgetStatus();
+            } catch (error) {
+                Utils.showToast(error.message, 'error');
+            }
+        }
+
+        // 載入固定收支
+        async function loadRecurring() {
+            try {
+                const data = await API.getRecurring();
+                const tbody = document.getElementById('recurringList');
+
+                if (data.items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">尚未設定固定收支</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.items.map(item => `
+                    <tr>
+                        <td>
+                            <span class="badge badge-${item.type === 'income' ? 'income' : 'expense'}">
+                                ${item.type === 'income' ? '收入' : '支出'}
+                            </span>
+                        </td>
+                        <td>${item.category}</td>
+                        <td>${item.description || '-'}</td>
+                        <td class="${item.type === 'income' ? 'text-success' : 'text-danger'}">
+                            ${item.type === 'income' ? '+' : '-'}${Utils.formatMoney(item.amount)}
+                        </td>
+                        <td>每月 ${item.day_of_month} 號</td>
+                        <td>
+                            <button class="btn-icon" onclick="editRecurring(${item.id})" title="編輯">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                            <button class="btn-icon danger" onclick="deleteRecurring(${item.id})" title="刪除">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('載入固定收支失敗:', error);
+            }
+        }
+
+        // 開啟新增彈窗
+        function openRecurringModal() {
+            document.getElementById('recurringModalTitle').textContent = '新增固定收支';
+            document.getElementById('recurringId').value = '';
+            document.getElementById('recurringForm').reset();
+            document.querySelector('input[name="recurringType"][value="expense"]').checked = true;
+            document.getElementById('recurringModal').classList.add('active');
+        }
+
+        // 編輯固定收支
+        async function editRecurring(id) {
+            try {
+                const item = await API.get(`/api/recurring/${id}`);
+
+                document.getElementById('recurringModalTitle').textContent = '編輯固定收支';
+                document.getElementById('recurringId').value = id;
+                document.querySelector(`input[name="recurringType"][value="${item.type}"]`).checked = true;
+                document.getElementById('recurringAmount').value = item.amount;
+                document.getElementById('recurringDay').value = item.day_of_month;
+                document.getElementById('recurringCategory').value = item.category;
+                document.getElementById('recurringDescription').value = item.description || '';
+
+                document.getElementById('recurringModal').classList.add('active');
+            } catch (error) {
+                Utils.showToast('載入失敗', 'error');
+            }
+        }
+
+        // 關閉彈窗
+        function closeRecurringModal() {
+            document.getElementById('recurringModal').classList.remove('active');
+        }
+
+        // 儲存固定收支
+        async function saveRecurring() {
+            const id = document.getElementById('recurringId').value;
+            const type = document.querySelector('input[name="recurringType"]:checked').value;
+            const amount = parseFloat(document.getElementById('recurringAmount').value);
+            const day_of_month = parseInt(document.getElementById('recurringDay').value);
+            const category = document.getElementById('recurringCategory').value.trim();
+            const description = document.getElementById('recurringDescription').value.trim();
+
+            if (!amount || amount <= 0) {
+                Utils.showToast('請輸入有效金額', 'error');
+                return;
+            }
+
+            if (!day_of_month) {
+                Utils.showToast('請選擇執行日期', 'error');
+                return;
+            }
+
+            if (!category) {
+                Utils.showToast('請輸入分類', 'error');
+                return;
+            }
+
+            try {
+                const data = { type, amount, day_of_month, category, description };
+
+                if (id) {
+                    await API.updateRecurring(id, data);
+                    Utils.showToast('更新成功');
+                } else {
+                    await API.createRecurring(data);
+                    Utils.showToast('新增成功');
+                }
+
+                closeRecurringModal();
+                loadRecurring();
+            } catch (error) {
+                Utils.showToast(error.message, 'error');
+            }
+        }
+
+        // 刪除固定收支
+        async function deleteRecurring(id) {
+            if (!Utils.confirm('確定要刪除這筆固定收支嗎？')) return;
+
+            try {
+                await API.deleteRecurring(id);
+                Utils.showToast('刪除成功');
+                loadRecurring();
+            } catch (error) {
+                Utils.showToast('刪除失敗', 'error');
+            }
+        }
+
+        // 頁面載入
+        init();
+    </script>
+</body>
+</html>
