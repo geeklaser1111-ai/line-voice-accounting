@@ -9,13 +9,14 @@ from linebot.v3.messaging import (
     ReplyMessageRequest,
     TextMessage,
 )
-from linebot.v3.webhooks import MessageEvent, AudioMessageContent
+from linebot.v3.webhooks import MessageEvent, AudioMessageContent, TextMessageContent
 from linebot.v3.exceptions import InvalidSignatureError
 
 from config import LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET
 from voice_handler import process_voice_message
 from parser import parse_transaction
-from database import add_transaction
+from database import add_transaction, get_summary
+from datetime import date
 
 # 引入路由
 from routers import auth, transactions, stats, export
@@ -61,6 +62,43 @@ async def webhook(request: Request):
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     return {"status": "ok"}
+
+
+@handler.add(MessageEvent, message=TextMessageContent)
+def handle_text_message(event: MessageEvent):
+    """處理文字訊息"""
+    user_id = event.source.user_id
+    text = event.message.text.strip()
+
+    reply_text = None
+
+    # 今日收支查詢
+    if text == "今日收支":
+        today = date.today().isoformat()
+        summary = get_summary(user_id, start_date=today, end_date=today)
+
+        reply_text = (
+            f"📊 今日收支報告\n"
+            f"━━━━━━━━━━━━━━\n"
+            f"💰 收入：${summary['total_income']:,.0f}\n"
+            f"💸 支出：${summary['total_expense']:,.0f}\n"
+            f"━━━━━━━━━━━━━━\n"
+            f"📈 結餘：${summary['balance']:,.0f}\n"
+            f"📝 筆數：{summary['transaction_count']} 筆\n\n"
+            f"🌐 查看更多：\n"
+            f"https://line-voice-accounting.onrender.com"
+        )
+
+    # 如果有回覆內容才回覆
+    if reply_text:
+        with ApiClient(configuration) as api_client:
+            messaging_api = MessagingApi(api_client)
+            messaging_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[TextMessage(text=reply_text)]
+                )
+            )
 
 
 @handler.add(MessageEvent, message=AudioMessageContent)
