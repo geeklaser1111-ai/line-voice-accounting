@@ -5,12 +5,11 @@
 - 銀幣：捐款 - 每100元 = 1銀幣
 - 銅幣：打工收入 - 每100元 = 1銅幣
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Request
 from typing import Optional
-from datetime import datetime
 
 from database import get_connection
-from routers.auth import get_current_user
+from routers.auth import get_user_id_from_request
 
 router = APIRouter(prefix="/api/energy", tags=["能量幣"])
 
@@ -86,16 +85,18 @@ def calculate_coins(transactions: list) -> dict:
 
 @router.get("")
 async def get_energy_coins(
+    request: Request,
     start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
-    user: dict = Depends(get_current_user)
+    end_date: Optional[str] = None
 ):
     """取得能量幣統計"""
+    user_id = get_user_id_from_request(request)
+
     conn = get_connection()
     cursor = conn.cursor()
 
     conditions = ["user_id = ?"]
-    params = [user["user_id"]]
+    params = [user_id]
 
     if start_date:
         conditions.append("date(created_at) >= ?")
@@ -124,11 +125,13 @@ async def get_energy_coins(
 
 @router.get("/history")
 async def get_energy_history(
+    request: Request,
     coin_type: str = "all",
-    limit: int = 20,
-    user: dict = Depends(get_current_user)
+    limit: int = 20
 ):
     """取得能量幣相關交易記錄"""
+    user_id = get_user_id_from_request(request)
+
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -136,7 +139,7 @@ async def get_energy_history(
         SELECT * FROM transactions
         WHERE user_id = ?
         ORDER BY created_at DESC
-    """, (user["user_id"],))
+    """, (user_id,))
 
     rows = cursor.fetchall()
     conn.close()
