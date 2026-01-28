@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>能量幣 - LINE 語音記帳</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* 能量幣專屬樣式 */
+        .energy-hero {
+            background: linear-gradient(135deg, #2D2A4A 0%, #1A1832 100%);
+            border-radius: var(--radius-xl);
+            padding: 40px;
+            margin-bottom: 28px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 12px 40px rgba(45, 42, 74, 0.3);
+        }
+
+        .energy-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, transparent 70%);
+            animation: float 10s ease-in-out infinite;
+        }
+
+        .energy-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(192, 192, 192, 0.1) 0%, transparent 70%);
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        .energy-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .energy-subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .total-coins {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            text-align: right;
+            z-index: 1;
+        }
+
+        .total-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .total-value {
+            font-size: 42px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* 硬幣卡片 */
+        .coins-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+
+        .coin-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid rgba(232, 221, 211, 0.5);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .coin-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-warm);
+        }
+
+        .coin-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+
+        .coin-card.gold::before {
+            background: linear-gradient(90deg, #FFD700, #FFA500);
+        }
+
+        .coin-card.silver::before {
+            background: linear-gradient(90deg, #C0C0C0, #A8A8A8);
+        }
+
+        .coin-card.copper::before {
+            background: linear-gradient(90deg, #CD7F32, #B87333);
+        }
+
+        .coin-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .coin-icon svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15));
+        }
+
+        .coin-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .coin-desc {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 16px;
+        }
+
+        .coin-count {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .coin-card.gold .coin-count {
+            color: #D4A500;
+        }
+
+        .coin-card.silver .coin-count {
+            color: #808080;
+        }
+
+        .coin-card.copper .coin-count {
+            color: #B87333;
+        }
+
+        .coin-amount {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        /* 規則說明 */
+        .rules-section {
+            margin-bottom: 28px;
+        }
+
+        .rules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .rule-card {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border: 1px solid rgba(232, 221, 211, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .rule-card:hover {
+            border-color: var(--warm-caramel);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .rule-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .rule-card.gold .rule-icon {
+            background: linear-gradient(135deg, #FFF8DC 0%, #FFEFD5 100%);
+        }
+
+        .rule-card.silver .rule-icon {
+            background: linear-gradient(135deg, #F5F5F5 0%, #E8E8E8 100%);
+        }
+
+        .rule-card.copper .rule-icon {
+            background: linear-gradient(135deg, #FFE4C4 0%, #FFDAB9 100%);
+        }
+
+        .rule-text h4 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .rule-text p {
+            font-size: 13px;
+            color: var(--text-light);
+            margin: 0;
+        }
+
+        /* 歷史記錄 */
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--warm-beige);
+            transition: all 0.3s ease;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-item:hover {
+            background: rgba(212, 165, 116, 0.04);
+        }
+
+        .history-coin {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .history-coin.gold {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+        }
+
+        .history-coin.silver {
+            background: linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 100%);
+            box-shadow: 0 4px 12px rgba(192, 192, 192, 0.3);
+        }
+
+        .history-coin.copper {
+            background: linear-gradient(135deg, #CD7F32 0%, #B87333 100%);
+            box-shadow: 0 4px 12px rgba(205, 127, 50, 0.3);
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 2px;
+        }
+
+        .history-date {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .history-coins {
+            text-align: right;
+        }
+
+        .history-coins-value {
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .history-coins-value.gold {
+            color: #D4A500;
+        }
+
+        .history-coins-value.silver {
+            color: #808080;
+        }
+
+        .history-coins-value.copper {
+            color: #B87333;
+        }
+
+        .history-amount {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 768px) {
+            .coins-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .energy-hero {
+                padding: 28px;
+            }
+
+            .total-coins {
+                position: static;
+                text-align: left;
+                margin-top: 24px;
+            }
+
+            .total-value {
+                font-size: 32px;
+            }
+
+            .coin-card {
+                padding: 24px;
+            }
+
+            .coin-count {
+                font-size: 36px;
+            }
+
+            .rules-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- 側邊欄 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
+                        <circle cx="50" cy="50" r="45" fill="#06C755"/>
+                        <path d="M30 50 L45 65 L70 40" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>語音記帳</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/static/dashboard.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    <span>儀表板</span>
+                </a>
+                <a href="/static/transactions.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="6" x2="21" y2="6"/>
+                        <line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                    <span>記帳明細</span>
+                </a>
+                <a href="/static/stats.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    <span>統計圖表</span>
+                </a>
+                <a href="/static/energy.html" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                    <span>能量幣</span>
+                </a>
+                <a href="/static/settings.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    <span>設定</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <img src="/static/img/default-avatar.png" alt="Avatar" class="user-avatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23ddd%22/><circle cx=%2250%22 cy=%2240%22 r=%2215%22 fill=%22%23999%22/><path d=%22M25 85 Q50 60 75 85%22 fill=%22%23999%22/></svg>'">
+                    <span class="user-name">載入中...</span>
+                </div>
+                <button class="btn-logout">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    登出
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主內容 -->
+        <main class="main-content">
+            <!-- 能量幣英雄區 -->
+            <div class="energy-hero">
+                <h1 class="energy-title">能量幣</h1>
+                <p class="energy-subtitle">透過良好的財務習慣收集能量幣</p>
+                <div class="total-coins">
+                    <div class="total-label">總能量幣</div>
+                    <div class="total-value" id="totalCoins">0</div>
+                </div>
+            </div>
+
+            <!-- 硬幣卡片 -->
+            <div class="coins-grid">
+                <!-- 金幣 -->
+                <div class="coin-card gold">
+                    <div class="coin-icon">
+                        <svg viewBox="0 0 100 100">
+                            <defs>
+                                <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#FFD700"/>
+                                    <stop offset="50%" style="stop-color:#FFA500"/>
+                                    <stop offset="100%" style="stop-color:#FFD700"/>
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="45" fill="url(#goldGradient)"/>
+                            <circle cx="50" cy="50" r="38" fill="none" stroke="#B8860B" stroke-width="2"/>
+                            <text x="50" y="58" text-anchor="middle" font-size="28" font-weight="bold" fill="#8B6914">$</text>
+                        </svg>
+                    </div>
+                    <div class="coin-name">金幣</div>
+                    <div class="coin-desc">還債 / 還貸款 / 還錢</div>
+                    <div class="coin-count" id="goldCoins">0</div>
+                    <div class="coin-amount">累計 $<span id="goldAmount">0</span></div>
+                </div>
+
+                <!-- 銀幣 -->
+                <div class="coin-card silver">
+                    <div class="coin-icon">
+                        <svg viewBox="0 0 100 100">
+                            <defs>
+                                <linearGradient id="silverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#E8E8E8"/>
+                                    <stop offset="50%" style="stop-color:#C0C0C0"/>
+                                    <stop offset="100%" style="stop-color:#E8E8E8"/>
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="45" fill="url(#silverGradient)"/>
+                            <circle cx="50" cy="50" r="38" fill="none" stroke="#808080" stroke-width="2"/>
+                            <text x="50" y="58" text-anchor="middle" font-size="24" font-weight="bold" fill="#606060">&#10084;</text>
+                        </svg>
+                    </div>
+                    <div class="coin-name">銀幣</div>
+                    <div class="coin-desc">捐款 / 公益 / 慈善</div>
+                    <div class="coin-count" id="silverCoins">0</div>
+                    <div class="coin-amount">累計 $<span id="silverAmount">0</span></div>
+                </div>
+
+                <!-- 銅幣 -->
+                <div class="coin-card copper">
+                    <div class="coin-icon">
+                        <svg viewBox="0 0 100 100">
+                            <defs>
+                                <linearGradient id="copperGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#DDA15E"/>
+                                    <stop offset="50%" style="stop-color:#CD7F32"/>
+                                    <stop offset="100%" style="stop-color:#DDA15E"/>
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="45" fill="url(#copperGradient)"/>
+                            <circle cx="50" cy="50" r="38" fill="none" stroke="#8B4513" stroke-width="2"/>
+                            <text x="50" y="58" text-anchor="middle" font-size="24" font-weight="bold" fill="#6B3E07">&#9733;</text>
+                        </svg>
+                    </div>
+                    <div class="coin-name">銅幣</div>
+                    <div class="coin-desc">打工 / 兼職 / 副業</div>
+                    <div class="coin-count" id="copperCoins">0</div>
+                    <div class="coin-amount">累計 $<span id="copperAmount">0</span></div>
+                </div>
+            </div>
+
+            <!-- 規則說明 -->
+            <div class="rules-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">獲得規則</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="rules-grid">
+                            <div class="rule-card gold">
+                                <div class="rule-icon">🥇</div>
+                                <div class="rule-text">
+                                    <h4>金幣</h4>
+                                    <p>記帳「還債、還貸款、還錢」等，每 $100 = 1 金幣</p>
+                                </div>
+                            </div>
+                            <div class="rule-card silver">
+                                <div class="rule-icon">🥈</div>
+                                <div class="rule-text">
+                                    <h4>銀幣</h4>
+                                    <p>記帳「捐款、慈善、公益」等，每 $100 = 1 銀幣</p>
+                                </div>
+                            </div>
+                            <div class="rule-card copper">
+                                <div class="rule-icon">🥉</div>
+                                <div class="rule-text">
+                                    <h4>銅幣</h4>
+                                    <p>記帳「打工、兼職、副業」收入，每 $100 = 1 銅幣</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 獲得記錄 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">獲得記錄</h2>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <div id="historyList">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script>
+        // 初始化
+        async function init() {
+            if (!await Auth.requireAuth()) return;
+            Auth.initUserDisplay();
+            Auth.bindLogoutButton();
+
+            await Promise.all([
+                loadEnergyCoins(),
+                loadHistory()
+            ]);
+        }
+
+        // 載入能量幣統計
+        async function loadEnergyCoins() {
+            try {
+                const data = await API.get('/api/energy');
+
+                document.getElementById('totalCoins').textContent = data.total_coins.toLocaleString();
+                document.getElementById('goldCoins').textContent = data.gold.toLocaleString();
+                document.getElementById('silverCoins').textContent = data.silver.toLocaleString();
+                document.getElementById('copperCoins').textContent = data.copper.toLocaleString();
+                document.getElementById('goldAmount').textContent = data.gold_amount.toLocaleString();
+                document.getElementById('silverAmount').textContent = data.silver_amount.toLocaleString();
+                document.getElementById('copperAmount').textContent = data.copper_amount.toLocaleString();
+
+                // 動畫效果
+                animateCoins();
+            } catch (error) {
+                console.error('載入能量幣失敗:', error);
+            }
+        }
+
+        // 數字動畫
+        function animateCoins() {
+            const counters = document.querySelectorAll('.coin-count, .total-value');
+            counters.forEach(counter => {
+                const target = parseInt(counter.textContent.replace(/,/g, ''));
+                let current = 0;
+                const increment = target / 30;
+                const duration = 1000;
+                const stepTime = duration / 30;
+
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        counter.textContent = target.toLocaleString();
+                        clearInterval(timer);
+                    } else {
+                        counter.textContent = Math.floor(current).toLocaleString();
+                    }
+                }, stepTime);
+            });
+        }
+
+        // 載入獲得記錄
+        async function loadHistory() {
+            try {
+                const data = await API.get('/api/energy/history');
+                const container = document.getElementById('historyList');
+
+                if (data.items.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>尚無獲得記錄</h3>
+                            <p>開始記帳來收集能量幣吧！</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.items.map(item => {
+                    const coinType = item.coin.type;
+                    const coinEmoji = coinType === 'gold' ? '🥇' : (coinType === 'silver' ? '🥈' : '🥉');
+                    const coinName = coinType === 'gold' ? '金幣' : (coinType === 'silver' ? '銀幣' : '銅幣');
+
+                    return `
+                        <div class="history-item">
+                            <div class="history-coin ${coinType}">${coinEmoji}</div>
+                            <div class="history-info">
+                                <div class="history-title">${item.category} - ${item.description || item.category}</div>
+                                <div class="history-date">${Utils.formatDate(item.created_at)}</div>
+                            </div>
+                            <div class="history-coins">
+                                <div class="history-coins-value ${coinType}">+${item.coin.amount} ${coinName}</div>
+                                <div class="history-amount">$${item.amount.toLocaleString()}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('載入歷史記錄失敗:', error);
+            }
+        }
+
+        init();
+    </script>
+
+    <!-- 手機版底部導航 -->
+    <nav class="mobile-nav">
+        <div class="mobile-nav-items">
+            <a href="/static/dashboard.html" class="mobile-nav-item" data-page="dashboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                <span>儀表板</span>
+            </a>
+            <a href="/static/transactions.html" class="mobile-nav-item" data-page="transactions">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="8" y1="6" x2="21" y2="6"/>
+                    <line x1="8" y1="12" x2="21" y2="12"/>
+                    <line x1="8" y1="18" x2="21" y2="18"/>
+                    <line x1="3" y1="6" x2="3.01" y2="6"/>
+                    <line x1="3" y1="12" x2="3.01" y2="12"/>
+                    <line x1="3" y1="18" x2="3.01" y2="18"/>
+                </svg>
+                <span>明細</span>
+            </a>
+            <a href="/static/energy.html" class="mobile-nav-item active" data-page="energy">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+                <span>能量幣</span>
+            </a>
+            <a href="/static/settings.html" class="mobile-nav-item" data-page="settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                <span>設定</span>
+            </a>
+        </div>
+    </nav>
+</body>
+</html>

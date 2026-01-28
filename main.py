@@ -23,7 +23,7 @@ from database import add_transaction, get_summary
 from datetime import date
 
 # 引入路由
-from routers import auth, transactions, stats, export, budget, recurring
+from routers import auth, transactions, stats, export, budget, recurring, energy
 
 app = FastAPI(title="LINE 語音記帳機器人")
 
@@ -34,6 +34,7 @@ app.include_router(stats.router)
 app.include_router(export.router)
 app.include_router(budget.router)
 app.include_router(recurring.router)
+app.include_router(energy.router)
 
 # 掛載靜態檔案
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -49,6 +50,9 @@ def get_quick_reply():
         items=[
             QuickReplyItem(
                 action=MessageAction(label="今日收支", text="今日收支")
+            ),
+            QuickReplyItem(
+                action=MessageAction(label="能量幣", text="能量幣")
             ),
             QuickReplyItem(
                 action=URIAction(label="查看網頁版", uri="https://line-voice-accounting.onrender.com")
@@ -124,6 +128,25 @@ def handle_text_message(event: MessageEvent):
             f"📝 筆數：{summary['transaction_count']} 筆\n\n"
             f"🌐 查看更多：\n"
             f"https://line-voice-accounting.onrender.com"
+        )
+    # 能量幣查詢
+    elif text == "能量幣":
+        from routers.energy import get_user_energy_coins
+        coins = get_user_energy_coins(user_id)
+
+        reply_text = (
+            f"✨ 能量幣報告\n"
+            f"━━━━━━━━━━━━━━\n"
+            f"🥇 金幣：{coins['gold']} 枚\n"
+            f"   └ 還債累計 ${coins['gold_amount']:,.0f}\n"
+            f"🥈 銀幣：{coins['silver']} 枚\n"
+            f"   └ 捐款累計 ${coins['silver_amount']:,.0f}\n"
+            f"🥉 銅幣：{coins['copper']} 枚\n"
+            f"   └ 打工累計 ${coins['copper_amount']:,.0f}\n"
+            f"━━━━━━━━━━━━━━\n"
+            f"🏆 總能量幣：{coins['total_coins']} 枚\n\n"
+            f"🌐 查看詳情：\n"
+            f"https://line-voice-accounting.onrender.com/static/energy.html"
         )
     else:
         # 嘗試解析為記帳內容
