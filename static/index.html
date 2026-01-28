@@ -101,7 +101,6 @@
         </div>
     </div>
 
-    <script src="/static/js/api.js"></script>
     <script>
         // 檢查 URL 參數中的錯誤
         const urlParams = new URLSearchParams(window.location.search);
@@ -117,20 +116,6 @@
             errorMessage.textContent = errorMessages[error] || '登入失敗，請重試';
             errorMessage.classList.remove('hidden');
         }
-
-        // 檢查是否已登入（使用直接 fetch，不觸發自動重定向）
-        (async () => {
-            try {
-                const response = await fetch('/auth/me', { credentials: 'same-origin' });
-                if (response.ok) {
-                    // 已登入，導向儀表板
-                    window.location.href = '/static/dashboard.html';
-                }
-                // 未登入，留在登入頁
-            } catch (e) {
-                // 網路錯誤或其他問題，留在登入頁
-            }
-        })();
     </script>
 </body>
 </html>

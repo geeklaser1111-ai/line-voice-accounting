@@ -15,9 +15,11 @@ const API = {
 
         const response = await fetch(url, { ...defaultOptions, ...options });
 
-        // 處理未授權
+        // 處理未授權（只在非登入頁時重定向）
         if (response.status === 401) {
-            window.location.href = '/static/index.html';
+            if (!window.location.pathname.includes('index.html')) {
+                window.location.href = '/static/index.html';
+            }
             throw new Error('未登入');
         }
 
