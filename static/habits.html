@@ -108,17 +108,19 @@
             align-items: center;
             justify-content: space-between;
             margin-bottom: 12px;
+            gap: 8px;
         }
 
         .calendar-title {
             font-size: 14px;
             font-weight: 600;
             color: var(--text-dark);
+            min-width: 90px;
+            text-align: center;
         }
 
         .calendar-nav {
             display: flex;
-            gap: 8px;
         }
 
         .calendar-nav button {
@@ -132,6 +134,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
+            color: var(--text-dark);
         }
 
         .calendar-nav button:hover {
@@ -474,7 +477,7 @@
     <script src="/static/js/utils.js"></script>
     <script>
         let habits = [];
-        let currentMonth = new Date();
+        let habitMonths = {}; // 每個習慣各自的日曆月份
 
         // 擴展 API
         API.getHabits = () => API.get('/api/habits');
@@ -583,6 +586,15 @@
             });
         }
 
+        // 切換月份
+        function changeMonth(habitId, delta) {
+            if (!habitMonths[habitId]) {
+                habitMonths[habitId] = new Date();
+            }
+            habitMonths[habitId].setMonth(habitMonths[habitId].getMonth() + delta);
+            renderCalendar(habitId);
+        }
+
         // 渲染日曆
         async function renderCalendar(habitId) {
             const container = document.getElementById(`calendar-${habitId}`);
@@ -591,8 +603,13 @@
             const habit = habits.find(h => h.id === habitId);
             const emoji = habit?.emoji || '✓';
 
-            const year = currentMonth.getFullYear();
-            const month = currentMonth.getMonth();
+            // 每個習慣有自己的日曆月份
+            if (!habitMonths[habitId]) {
+                habitMonths[habitId] = new Date();
+            }
+            const calendarDate = habitMonths[habitId];
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
 
             // 取得該月的打卡記錄
             const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
@@ -616,7 +633,21 @@
 
             let html = `
                 <div class="calendar-header">
+                    <div class="calendar-nav">
+                        <button onclick="changeMonth(${habitId}, -1)">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15 18 9 12 15 6"/>
+                            </svg>
+                        </button>
+                    </div>
                     <span class="calendar-title">${year}年 ${monthNames[month]}</span>
+                    <div class="calendar-nav">
+                        <button onclick="changeMonth(${habitId}, 1)">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="calendar-grid">
                     ${dayNames.map(d => `<div class="calendar-day-header">${d}</div>`).join('')}
