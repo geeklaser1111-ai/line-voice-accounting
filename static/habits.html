@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>習慣追蹤 - LINE 語音記帳</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* 習慣追蹤專屬樣式 */
+        .habits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+
+        .habit-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid rgba(232, 221, 211, 0.5);
+        }
+
+        .habit-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .habit-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .habit-emoji {
+            width: 48px;
+            height: 48px;
+            background: var(--warm-beige);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .habit-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .habit-streak {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #FFE4B5 0%, #FFD89B 100%);
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #8B6914;
+        }
+
+        .checkin-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .checkin-btn.unchecked {
+            background: var(--warm-caramel);
+            color: white;
+        }
+
+        .checkin-btn.unchecked:hover {
+            background: var(--warm-terracotta);
+            transform: translateY(-2px);
+        }
+
+        .checkin-btn.checked {
+            background: var(--income-color);
+            color: white;
+        }
+
+        .checkin-btn.checked:hover {
+            opacity: 0.9;
+        }
+
+        /* 日曆 */
+        .calendar {
+            margin-top: 20px;
+        }
+
+        .calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .calendar-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 8px;
+        }
+
+        .calendar-nav button {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: var(--warm-beige);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-nav button:hover {
+            background: var(--warm-sand);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            padding: 4px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            border-radius: 6px;
+            color: var(--text-light);
+        }
+
+        .calendar-day.current-month {
+            color: var(--text-dark);
+        }
+
+        .calendar-day.today {
+            background: var(--warm-beige);
+            font-weight: 600;
+        }
+
+        .calendar-day.checked {
+            background: var(--income-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        /* 新增習慣按鈕 */
+        .add-habit-card {
+            background: var(--warm-beige);
+            border: 2px dashed var(--warm-sand);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 200px;
+        }
+
+        .add-habit-card:hover {
+            border-color: var(--warm-caramel);
+            background: var(--warm-cream);
+        }
+
+        .add-habit-icon {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: var(--warm-caramel);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .add-habit-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        /* 習慣操作選單 */
+        .habit-actions {
+            position: relative;
+        }
+
+        .habit-menu-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+        }
+
+        .habit-menu-btn:hover {
+            background: var(--warm-beige);
+            color: var(--text-dark);
+        }
+
+        .habit-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-warm);
+            padding: 8px;
+            min-width: 120px;
+            display: none;
+            z-index: 10;
+        }
+
+        .habit-menu.active {
+            display: block;
+        }
+
+        .habit-menu-item {
+            display: block;
+            width: 100%;
+            padding: 10px 12px;
+            border: none;
+            background: transparent;
+            text-align: left;
+            font-size: 14px;
+            color: var(--text-dark);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .habit-menu-item:hover {
+            background: var(--warm-beige);
+        }
+
+        .habit-menu-item.danger {
+            color: var(--expense-color);
+        }
+
+        /* 空狀態 */
+        .empty-habits {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-habits-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .empty-habits h3 {
+            font-size: 20px;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .empty-habits p {
+            color: var(--text-light);
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .habits-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- 側邊欄 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
+                        <circle cx="50" cy="50" r="45" fill="#06C755"/>
+                        <path d="M30 50 L45 65 L70 40" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>語音記帳</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/static/dashboard.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    <span>儀表板</span>
+                </a>
+                <a href="/static/transactions.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="6" x2="21" y2="6"/>
+                        <line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                    <span>記帳明細</span>
+                </a>
+                <a href="/static/stats.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    <span>統計圖表</span>
+                </a>
+                <a href="/static/energy.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                    <span>能量幣</span>
+                </a>
+                <a href="/static/habits.html" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    <span>習慣追蹤</span>
+                </a>
+                <a href="/static/settings.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    <span>設定</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <img src="/static/img/default-avatar.png" alt="Avatar" class="user-avatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23ddd%22/><circle cx=%2250%22 cy=%2240%22 r=%2215%22 fill=%22%23999%22/><path d=%22M25 85 Q50 60 75 85%22 fill=%22%23999%22/></svg>'">
+                    <span class="user-name">載入中...</span>
+                </div>
+                <button class="btn-logout">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    登出
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主內容 -->
+        <main class="main-content">
+            <header class="page-header">
+                <h1 class="page-title">習慣追蹤</h1>
+                <p class="page-subtitle">養成好習慣，每天打卡記錄</p>
+            </header>
+
+            <!-- 習慣列表 -->
+            <div class="habits-grid" id="habitsGrid">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 新增/編輯習慣彈窗 -->
+    <div class="modal-overlay" id="habitModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="habitModalTitle">新增習慣</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="habitForm">
+                    <input type="hidden" id="habitId">
+                    <div class="form-group">
+                        <label class="form-label">習慣名稱</label>
+                        <input type="text" id="habitName" class="form-input" required placeholder="例如：打拳、閱讀、運動">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">圖示（選填）</label>
+                        <input type="text" id="habitEmoji" class="form-input" placeholder="選擇一個表情符號，例如：🥊">
+                        <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button type="button" class="emoji-btn" onclick="selectEmoji('🥊')">🥊</button>
+                            <button type="button" class="emoji-btn" onclick="selectEmoji('📚')">📚</button>
+                            <button type="button" class="emoji-btn" onclick="selectEmoji('🏃')">🏃</button>
+                            <button type="button" class="emoji-btn" onclick="selectEmoji('💪')">💪</button>
+                            <button type="button" class="emoji-btn" onclick="selectEmoji('🧘')">🧘</button>
+                            <button type="button" class="emoji-btn" onclick="selectEmoji('💊')">💊</button>
+                            <button type="button" class="emoji-btn" onclick="selectEmoji('💤')">💤</button>
+                            <button type="button" class="emoji-btn" onclick="selectEmoji('🍎')">🍎</button>
+                            <button type="button" class="emoji-btn" onclick="selectEmoji('✍️')">✍️</button>
+                            <button type="button" class="emoji-btn" onclick="selectEmoji('🎯')">🎯</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveHabit()">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .emoji-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--warm-sand);
+            background: white;
+            border-radius: var(--radius-sm);
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .emoji-btn:hover {
+            border-color: var(--warm-caramel);
+            background: var(--warm-beige);
+        }
+    </style>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script>
+        let habits = [];
+        let currentMonth = new Date();
+
+        // 擴展 API
+        API.getHabits = () => API.get('/api/habits');
+        API.createHabit = (data) => API.post('/api/habits', data);
+        API.updateHabit = (id, data) => API.put(`/api/habits/${id}`, data);
+        API.deleteHabit = (id) => API.delete(`/api/habits/${id}`);
+        API.checkinHabit = (id) => API.post(`/api/habits/${id}/checkin`);
+        API.uncheckinHabit = (id) => API.delete(`/api/habits/${id}/checkin`);
+        API.getHabitCheckins = (id, start, end) => API.get(`/api/habits/${id}/checkins`, { start_date: start, end_date: end });
+
+        // 初始化
+        async function init() {
+            if (!await Auth.requireAuth()) return;
+            Auth.initUserDisplay();
+            Auth.bindLogoutButton();
+
+            await loadHabits();
+
+            // 點擊其他地方關閉選單
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.habit-actions')) {
+                    document.querySelectorAll('.habit-menu').forEach(m => m.classList.remove('active'));
+                }
+            });
+        }
+
+        // 載入習慣
+        async function loadHabits() {
+            try {
+                const data = await API.getHabits();
+                habits = data.items;
+                renderHabits();
+            } catch (error) {
+                console.error('載入習慣失敗:', error);
+            }
+        }
+
+        // 渲染習慣列表
+        function renderHabits() {
+            const grid = document.getElementById('habitsGrid');
+
+            if (habits.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-habits" style="grid-column: 1 / -1;">
+                        <div class="empty-habits-icon">📝</div>
+                        <h3>還沒有任何習慣</h3>
+                        <p>建立你的第一個習慣，開始追蹤吧！</p>
+                        <button class="btn btn-primary" onclick="openAddModal()">新增習慣</button>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = habits.map(habit => `
+                <div class="habit-card" data-habit-id="${habit.id}">
+                    <div class="habit-header">
+                        <div class="habit-info">
+                            <div class="habit-emoji">${habit.emoji || '✓'}</div>
+                            <div class="habit-name">${habit.name}</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            ${habit.streak > 0 ? `
+                                <div class="habit-streak">
+                                    🔥 ${habit.streak} 天
+                                </div>
+                            ` : ''}
+                            <div class="habit-actions">
+                                <button class="habit-menu-btn" onclick="toggleMenu(${habit.id})">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="1"/>
+                                        <circle cx="12" cy="5" r="1"/>
+                                        <circle cx="12" cy="19" r="1"/>
+                                    </svg>
+                                </button>
+                                <div class="habit-menu" id="menu-${habit.id}">
+                                    <button class="habit-menu-item" onclick="openEditModal(${habit.id})">編輯</button>
+                                    <button class="habit-menu-item danger" onclick="deleteHabit(${habit.id})">刪除</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="checkin-btn ${habit.checked ? 'checked' : 'unchecked'}" onclick="toggleCheckin(${habit.id})">
+                        ${habit.checked ? '✓ 今天已完成' : '打卡'}
+                    </button>
+
+                    <div class="calendar" id="calendar-${habit.id}">
+                        <!-- 日曆會在這裡渲染 -->
+                    </div>
+                </div>
+            `).join('');
+
+            // 新增習慣卡片
+            html += `
+                <div class="add-habit-card" onclick="openAddModal()">
+                    <div class="add-habit-icon">+</div>
+                    <div class="add-habit-text">新增習慣</div>
+                </div>
+            `;
+
+            grid.innerHTML = html;
+
+            // 渲染每個習慣的日曆
+            habits.forEach(habit => {
+                renderCalendar(habit.id);
+            });
+        }
+
+        // 渲染日曆
+        async function renderCalendar(habitId) {
+            const container = document.getElementById(`calendar-${habitId}`);
+            if (!container) return;
+
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+
+            // 取得該月的打卡記錄
+            const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${lastDay}`;
+
+            let checkedDates = [];
+            try {
+                const data = await API.getHabitCheckins(habitId, startDate, endDate);
+                checkedDates = data.dates || [];
+            } catch (e) {
+                console.error('取得打卡記錄失敗:', e);
+            }
+
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+
+            const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+
+            let html = `
+                <div class="calendar-header">
+                    <span class="calendar-title">${year}年 ${monthNames[month]}</span>
+                </div>
+                <div class="calendar-grid">
+                    ${dayNames.map(d => `<div class="calendar-day-header">${d}</div>`).join('')}
+            `;
+
+            // 上個月的日子
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                html += `<div class="calendar-day"></div>`;
+            }
+
+            // 這個月的日子
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+                const isChecked = checkedDates.includes(dateStr);
+
+                let classes = ['calendar-day', 'current-month'];
+                if (isToday) classes.push('today');
+                if (isChecked) classes.push('checked');
+
+                html += `<div class="${classes.join(' ')}">${day}</div>`;
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // 切換打卡
+        async function toggleCheckin(habitId) {
+            const habit = habits.find(h => h.id === habitId);
+            if (!habit) return;
+
+            try {
+                if (habit.checked) {
+                    await API.uncheckinHabit(habitId);
+                    Utils.showToast('已取消打卡');
+                } else {
+                    const result = await API.checkinHabit(habitId);
+                    if (result.already_checked) {
+                        Utils.showToast('今天已經打卡過了');
+                    } else {
+                        Utils.showToast(`打卡成功！🔥 連續 ${result.streak} 天`);
+                    }
+                }
+                await loadHabits();
+            } catch (error) {
+                Utils.showToast('操作失敗', 'error');
+            }
+        }
+
+        // 切換選單
+        function toggleMenu(habitId) {
+            const menu = document.getElementById(`menu-${habitId}`);
+            document.querySelectorAll('.habit-menu').forEach(m => {
+                if (m !== menu) m.classList.remove('active');
+            });
+            menu.classList.toggle('active');
+        }
+
+        // 開啟新增彈窗
+        function openAddModal() {
+            document.getElementById('habitModalTitle').textContent = '新增習慣';
+            document.getElementById('habitId').value = '';
+            document.getElementById('habitName').value = '';
+            document.getElementById('habitEmoji').value = '';
+            document.getElementById('habitModal').classList.add('active');
+        }
+
+        // 開啟編輯彈窗
+        function openEditModal(habitId) {
+            const habit = habits.find(h => h.id === habitId);
+            if (!habit) return;
+
+            document.getElementById('habitModalTitle').textContent = '編輯習慣';
+            document.getElementById('habitId').value = habitId;
+            document.getElementById('habitName').value = habit.name;
+            document.getElementById('habitEmoji').value = habit.emoji || '';
+            document.getElementById('habitModal').classList.add('active');
+
+            // 關閉選單
+            document.querySelectorAll('.habit-menu').forEach(m => m.classList.remove('active'));
+        }
+
+        // 關閉彈窗
+        function closeModal() {
+            document.getElementById('habitModal').classList.remove('active');
+        }
+
+        // 選擇表情
+        function selectEmoji(emoji) {
+            document.getElementById('habitEmoji').value = emoji;
+        }
+
+        // 儲存習慣
+        async function saveHabit() {
+            const id = document.getElementById('habitId').value;
+            const name = document.getElementById('habitName').value.trim();
+            const emoji = document.getElementById('habitEmoji').value.trim() || '✓';
+
+            if (!name) {
+                Utils.showToast('請輸入習慣名稱', 'error');
+                return;
+            }
+
+            try {
+                if (id) {
+                    await API.updateHabit(id, { name, emoji });
+                    Utils.showToast('更新成功');
+                } else {
+                    await API.createHabit({ name, emoji });
+                    Utils.showToast('習慣建立成功');
+                }
+                closeModal();
+                await loadHabits();
+            } catch (error) {
+                Utils.showToast(error.message, 'error');
+            }
+        }
+
+        // 刪除習慣
+        async function deleteHabit(habitId) {
+            const habit = habits.find(h => h.id === habitId);
+            if (!habit) return;
+
+            if (!confirm(`確定要刪除「${habit.name}」嗎？所有打卡記錄也會一併刪除。`)) {
+                return;
+            }
+
+            try {
+                await API.deleteHabit(habitId);
+                Utils.showToast('刪除成功');
+                await loadHabits();
+            } catch (error) {
+                Utils.showToast('刪除失敗', 'error');
+            }
+        }
+
+        init();
+    </script>
+
+    <!-- 手機版底部導航 -->
+    <nav class="mobile-nav">
+        <div class="mobile-nav-items">
+            <a href="/static/dashboard.html" class="mobile-nav-item" data-page="dashboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                <span>儀表板</span>
+            </a>
+            <a href="/static/transactions.html" class="mobile-nav-item" data-page="transactions">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="8" y1="6" x2="21" y2="6"/>
+                    <line x1="8" y1="12" x2="21" y2="12"/>
+                    <line x1="8" y1="18" x2="21" y2="18"/>
+                    <line x1="3" y1="6" x2="3.01" y2="6"/>
+                    <line x1="3" y1="12" x2="3.01" y2="12"/>
+                    <line x1="3" y1="18" x2="3.01" y2="18"/>
+                </svg>
+                <span>明細</span>
+            </a>
+            <a href="/static/habits.html" class="mobile-nav-item active" data-page="habits">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                <span>習慣</span>
+            </a>
+            <a href="/static/settings.html" class="mobile-nav-item" data-page="settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                <span>設定</span>
+            </a>
+        </div>
+    </nav>
+</body>
+</html>

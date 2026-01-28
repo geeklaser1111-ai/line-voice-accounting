@@ -23,7 +23,7 @@ from database import add_transaction, get_summary
 from datetime import date
 
 # 引入路由
-from routers import auth, transactions, stats, export, budget, recurring, energy
+from routers import auth, transactions, stats, export, budget, recurring, energy, habits
 
 app = FastAPI(title="LINE 語音記帳機器人")
 
@@ -35,6 +35,7 @@ app.include_router(export.router)
 app.include_router(budget.router)
 app.include_router(recurring.router)
 app.include_router(energy.router)
+app.include_router(habits.router)
 
 # 掛載靜態檔案
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -50,6 +51,9 @@ def get_quick_reply():
         items=[
             QuickReplyItem(
                 action=MessageAction(label="今日收支", text="今日收支")
+            ),
+            QuickReplyItem(
+                action=MessageAction(label="習慣", text="習慣")
             ),
             QuickReplyItem(
                 action=MessageAction(label="能量幣", text="能量幣")
@@ -148,40 +152,121 @@ def handle_text_message(event: MessageEvent):
             f"🌐 查看詳情：\n"
             f"https://line-voice-accounting.onrender.com/static/energy.html"
         )
-    else:
-        # 嘗試解析為記帳內容
-        parsed = parse_transaction(text)
+    # 習慣查詢
+    elif text == "習慣":
+        from database import get_today_checkins, get_habit_streak
+        habits_status = get_today_checkins(user_id)
 
-        if parsed:
-            # 儲存到資料庫
-            transaction_id = add_transaction(
-                user_id=user_id,
-                trans_type=parsed.type,
-                amount=parsed.amount,
-                category=parsed.category,
-                description=parsed.description
-            )
-
-            # 回覆確認訊息
-            type_text = "收入" if parsed.type == "income" else "支出"
+        if not habits_status:
             reply_text = (
-                f"✅ 記帳成功！\n\n"
-                f"類型：{type_text}\n"
-                f"分類：{parsed.category}\n"
-                f"金額：${parsed.amount:,.0f}\n"
-                f"描述：{parsed.description}"
+                f"📋 習慣追蹤\n"
+                f"━━━━━━━━━━━━━━\n"
+                f"尚未建立任何習慣\n\n"
+                f"輸入「新增習慣 打拳」來建立\n"
+                f"或到網頁版管理習慣：\n"
+                f"https://line-voice-accounting.onrender.com/static/habits.html"
             )
         else:
-            # 無法解析，顯示使用說明
+            lines = ["📋 今日習慣\n━━━━━━━━━━━━━━"]
+            for h in habits_status:
+                status = "✅" if h["checked"] else "⬜"
+                streak = get_habit_streak(user_id, h["id"])
+                streak_text = f" 🔥{streak}天" if streak > 0 else ""
+                lines.append(f"{status} {h['emoji']} {h['name']}{streak_text}")
+
+            lines.append(f"\n輸入習慣名稱即可打卡")
+            lines.append(f"例如：打拳")
+            reply_text = "\n".join(lines)
+
+    # 新增習慣
+    elif text.startswith("新增習慣 ") or text.startswith("新增習慣"):
+        from database import create_habit, get_habit_by_name
+        habit_name = text.replace("新增習慣", "").strip()
+
+        if not habit_name:
+            reply_text = "請輸入習慣名稱\n例如：新增習慣 打拳"
+        elif get_habit_by_name(user_id, habit_name):
+            reply_text = f"「{habit_name}」習慣已存在"
+        else:
+            create_habit(user_id, habit_name)
             reply_text = (
-                f"📝 記帳小幫手\n"
-                f"━━━━━━━━━━━━━━\n"
-                f"請輸入記帳內容，例如：\n"
-                f"• 午餐 150\n"
-                f"• 交通費 50\n"
-                f"• 收入 薪水 50000\n\n"
-                f"或使用語音輸入更方便！"
+                f"✅ 習慣建立成功！\n\n"
+                f"習慣名稱：{habit_name}\n\n"
+                f"輸入「{habit_name}」即可打卡"
             )
+
+    # 打卡習慣（直接輸入習慣名稱或「打卡 習慣名稱」）
+    elif text.startswith("打卡 "):
+        from database import get_habit_by_name, checkin_habit, get_habit_streak
+        habit_name = text.replace("打卡 ", "").strip()
+        habit = get_habit_by_name(user_id, habit_name)
+
+        if not habit:
+            reply_text = f"找不到「{habit_name}」習慣\n\n輸入「習慣」查看所有習慣"
+        else:
+            success = checkin_habit(user_id, habit["id"])
+            streak = get_habit_streak(user_id, habit["id"])
+
+            if success:
+                reply_text = (
+                    f"✅ {habit['emoji']} {habit_name} 打卡成功！\n\n"
+                    f"🔥 連續 {streak} 天\n\n"
+                    f"繼續保持！💪"
+                )
+            else:
+                reply_text = f"今天「{habit_name}」已經打卡過了！\n\n🔥 連續 {streak} 天"
+
+    else:
+        # 先檢查是否為習慣名稱（直接打卡）
+        from database import get_habit_by_name, checkin_habit, get_habit_streak
+        habit = get_habit_by_name(user_id, text)
+
+        if habit:
+            success = checkin_habit(user_id, habit["id"])
+            streak = get_habit_streak(user_id, habit["id"])
+
+            if success:
+                reply_text = (
+                    f"✅ {habit['emoji']} {habit['name']} 打卡成功！\n\n"
+                    f"🔥 連續 {streak} 天\n\n"
+                    f"繼續保持！💪"
+                )
+            else:
+                reply_text = f"今天「{habit['name']}」已經打卡過了！\n\n🔥 連續 {streak} 天"
+        else:
+            # 嘗試解析為記帳內容
+            parsed = parse_transaction(text)
+
+            if parsed:
+                # 儲存到資料庫
+                transaction_id = add_transaction(
+                    user_id=user_id,
+                    trans_type=parsed.type,
+                    amount=parsed.amount,
+                    category=parsed.category,
+                    description=parsed.description
+                )
+
+                # 回覆確認訊息
+                type_text = "收入" if parsed.type == "income" else "支出"
+                reply_text = (
+                    f"✅ 記帳成功！\n\n"
+                    f"類型：{type_text}\n"
+                    f"分類：{parsed.category}\n"
+                    f"金額：${parsed.amount:,.0f}\n"
+                    f"描述：{parsed.description}"
+                )
+            else:
+                # 無法解析，顯示使用說明
+                reply_text = (
+                    f"📝 記帳小幫手\n"
+                    f"━━━━━━━━━━━━━━\n"
+                    f"請輸入記帳內容，例如：\n"
+                    f"• 午餐 150\n"
+                    f"• 交通費 50\n"
+                    f"• 收入 薪水 50000\n\n"
+                    f"或使用語音輸入更方便！"
+                )
 
     # 回覆訊息（帶快速回覆按鈕）
     with ApiClient(configuration) as api_client:

@@ -72,6 +72,29 @@ def init_db():
         )
     """)
 
+    # 習慣表
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS habits (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            emoji TEXT DEFAULT '✓',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # 習慣打卡表
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS habit_checkins (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            habit_id INTEGER NOT NULL,
+            check_date DATE NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, habit_id, check_date)
+        )
+    """)
+
     # 建立索引
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_transactions_user_id
@@ -92,6 +115,14 @@ def init_db():
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_recurring_user_id
         ON recurring_transactions(user_id)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_habits_user_id
+        ON habits(user_id)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_habit_checkins_user_habit
+        ON habit_checkins(user_id, habit_id)
     """)
 
     conn.commit()
@@ -800,6 +831,313 @@ def execute_recurring_transactions():
     conn.close()
 
     return executed_count
+
+
+# ============ 習慣打卡相關函式 ============
+
+def create_habit(user_id: str, name: str, emoji: str = '✓') -> int:
+    """建立新習慣"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO habits (user_id, name, emoji)
+        VALUES (?, ?, ?)
+    """, (user_id, name, emoji))
+
+    habit_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return habit_id
+
+
+def get_habits(user_id: str) -> list:
+    """取得用戶的所有習慣"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT * FROM habits
+        WHERE user_id = ?
+        ORDER BY created_at ASC
+    """, (user_id,))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [dict(row) for row in rows]
+
+
+def get_habit_by_id(habit_id: int, user_id: str) -> Optional[dict]:
+    """取得單一習慣"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT * FROM habits
+        WHERE id = ? AND user_id = ?
+    """, (habit_id, user_id))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    return dict(row) if row else None
+
+
+def get_habit_by_name(user_id: str, name: str) -> Optional[dict]:
+    """根據名稱取得習慣"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT * FROM habits
+        WHERE user_id = ? AND name = ?
+    """, (user_id, name))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    return dict(row) if row else None
+
+
+def update_habit(habit_id: int, user_id: str, name: str = None, emoji: str = None) -> bool:
+    """更新習慣"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    updates = []
+    params = []
+
+    if name is not None:
+        updates.append("name = ?")
+        params.append(name)
+    if emoji is not None:
+        updates.append("emoji = ?")
+        params.append(emoji)
+
+    if not updates:
+        conn.close()
+        return True
+
+    params.extend([habit_id, user_id])
+    cursor.execute(f"""
+        UPDATE habits
+        SET {", ".join(updates)}
+        WHERE id = ? AND user_id = ?
+    """, params)
+
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+
+    return updated
+
+
+def delete_habit(habit_id: int, user_id: str) -> bool:
+    """刪除習慣（同時刪除打卡記錄）"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 刪除打卡記錄
+    cursor.execute("""
+        DELETE FROM habit_checkins WHERE habit_id = ? AND user_id = ?
+    """, (habit_id, user_id))
+
+    # 刪除習慣
+    cursor.execute("""
+        DELETE FROM habits WHERE id = ? AND user_id = ?
+    """, (habit_id, user_id))
+
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+
+    return deleted
+
+
+def checkin_habit(user_id: str, habit_id: int, check_date: str = None) -> bool:
+    """習慣打卡"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if check_date is None:
+        check_date = datetime.now().strftime("%Y-%m-%d")
+
+    try:
+        cursor.execute("""
+            INSERT INTO habit_checkins (user_id, habit_id, check_date)
+            VALUES (?, ?, ?)
+        """, (user_id, habit_id, check_date))
+        conn.commit()
+        success = True
+    except sqlite3.IntegrityError:
+        # 已經打卡過了
+        success = False
+
+    conn.close()
+    return success
+
+
+def uncheckin_habit(user_id: str, habit_id: int, check_date: str = None) -> bool:
+    """取消習慣打卡"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if check_date is None:
+        check_date = datetime.now().strftime("%Y-%m-%d")
+
+    cursor.execute("""
+        DELETE FROM habit_checkins
+        WHERE user_id = ? AND habit_id = ? AND check_date = ?
+    """, (user_id, habit_id, check_date))
+
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+
+    return deleted
+
+
+def get_habit_checkins(user_id: str, habit_id: int, start_date: str = None, end_date: str = None) -> list:
+    """取得習慣的打卡記錄"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    conditions = ["user_id = ?", "habit_id = ?"]
+    params = [user_id, habit_id]
+
+    if start_date:
+        conditions.append("check_date >= ?")
+        params.append(start_date)
+
+    if end_date:
+        conditions.append("check_date <= ?")
+        params.append(end_date)
+
+    where_clause = " AND ".join(conditions)
+
+    cursor.execute(f"""
+        SELECT check_date FROM habit_checkins
+        WHERE {where_clause}
+        ORDER BY check_date DESC
+    """, params)
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [row["check_date"] for row in rows]
+
+
+def get_today_checkins(user_id: str) -> list:
+    """取得今日所有習慣的打卡狀態"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    cursor.execute("""
+        SELECT h.*,
+               CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as checked
+        FROM habits h
+        LEFT JOIN habit_checkins c
+            ON h.id = c.habit_id AND c.check_date = ? AND c.user_id = h.user_id
+        WHERE h.user_id = ?
+        ORDER BY h.created_at ASC
+    """, (today, user_id))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [dict(row) for row in rows]
+
+
+def get_habit_streak(user_id: str, habit_id: int) -> int:
+    """計算連續打卡天數"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT check_date FROM habit_checkins
+        WHERE user_id = ? AND habit_id = ?
+        ORDER BY check_date DESC
+    """, (user_id, habit_id))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    if not rows:
+        return 0
+
+    streak = 0
+    today = datetime.now().date()
+
+    for row in rows:
+        check_date = datetime.strptime(row["check_date"], "%Y-%m-%d").date()
+        expected_date = today - timedelta(days=streak)
+
+        # 允許今天還沒打卡的情況
+        if streak == 0 and check_date == today - timedelta(days=1):
+            expected_date = today - timedelta(days=1)
+
+        if check_date == expected_date:
+            streak += 1
+        elif streak == 0 and check_date == today:
+            streak += 1
+        else:
+            break
+
+    return streak
+
+
+def get_habit_stats(user_id: str, habit_id: int, year: int = None, month: int = None) -> dict:
+    """取得習慣統計"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if year is None:
+        year = datetime.now().year
+    if month is None:
+        month = datetime.now().month
+
+    # 計算該月的天數
+    if month == 12:
+        next_month = datetime(year + 1, 1, 1)
+    else:
+        next_month = datetime(year, month + 1, 1)
+    days_in_month = (next_month - datetime(year, month, 1)).days
+
+    start_date = f"{year}-{month:02d}-01"
+    end_date = f"{year}-{month:02d}-{days_in_month:02d}"
+
+    # 取得該月打卡天數
+    cursor.execute("""
+        SELECT COUNT(*) as count FROM habit_checkins
+        WHERE user_id = ? AND habit_id = ? AND check_date >= ? AND check_date <= ?
+    """, (user_id, habit_id, start_date, end_date))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    checked_days = row["count"]
+
+    # 計算到今天為止的天數（如果是當月）
+    today = datetime.now()
+    if year == today.year and month == today.month:
+        days_passed = today.day
+    else:
+        days_passed = days_in_month
+
+    completion_rate = (checked_days / days_passed * 100) if days_passed > 0 else 0
+
+    return {
+        "year": year,
+        "month": month,
+        "checked_days": checked_days,
+        "days_in_month": days_in_month,
+        "days_passed": days_passed,
+        "completion_rate": round(completion_rate, 1)
+    }
 
 
 # 初始化資料庫
