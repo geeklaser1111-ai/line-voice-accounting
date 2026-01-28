@@ -15,8 +15,9 @@ LINE_LOGIN_REDIRECT_URI = os.getenv("LINE_LOGIN_REDIRECT_URI", "http://localhost
 # OpenAI
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Database
-DATABASE_PATH = "accounting.db"
+# Database (Turso)
+TURSO_DATABASE_URL = os.getenv("TURSO_DATABASE_URL")
+TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
 
 # Session
 SESSION_EXPIRE_DAYS = 7

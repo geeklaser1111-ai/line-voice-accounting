@@ -1,15 +1,25 @@
-import sqlite3
+import libsql_experimental as libsql
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional
-from config import DATABASE_PATH, SESSION_EXPIRE_DAYS
+from config import TURSO_DATABASE_URL, TURSO_AUTH_TOKEN, SESSION_EXPIRE_DAYS
 
 
 def get_connection():
     """取得資料庫連線"""
-    conn = sqlite3.connect(DATABASE_PATH)
-    conn.row_factory = sqlite3.Row
+    conn = libsql.connect(
+        TURSO_DATABASE_URL,
+        auth_token=TURSO_AUTH_TOKEN
+    )
     return conn
+
+
+def dict_row(cursor, row):
+    """將 row 轉換為 dict"""
+    if row is None:
+        return None
+    columns = [col[0] for col in cursor.description]
+    return dict(zip(columns, row))
 
 
 def init_db():
@@ -161,9 +171,10 @@ def get_session(session_id: str) -> Optional[dict]:
     """, (session_id,))
 
     row = cursor.fetchone()
+    result = dict_row(cursor, row)
     conn.close()
 
-    return dict(row) if row else None
+    return result
 
 
 def delete_session(session_id: str) -> bool:
@@ -233,9 +244,10 @@ def get_transactions(user_id: str, limit: int = 10) -> list:
     """, (user_id, limit))
 
     rows = cursor.fetchall()
+    result = [dict_row(cursor, row) for row in rows]
     conn.close()
 
-    return [dict(row) for row in rows]
+    return result
 
 
 def get_transactions_paginated(
@@ -277,7 +289,8 @@ def get_transactions_paginated(
     cursor.execute(f"""
         SELECT COUNT(*) as total FROM transactions WHERE {where_clause}
     """, params)
-    total = cursor.fetchone()["total"]
+    total_row = cursor.fetchone()
+    total = dict_row(cursor, total_row)["total"]
 
     # 取得分頁資料
     offset = (page - 1) * per_page
@@ -292,7 +305,7 @@ def get_transactions_paginated(
     conn.close()
 
     return {
-        "items": [dict(row) for row in rows],
+        "items": [dict_row(cursor, row) for row in rows],
         "total": total,
         "page": page,
         "per_page": per_page,
@@ -313,7 +326,7 @@ def get_transaction_by_id(transaction_id: int, user_id: str) -> Optional[dict]:
     row = cursor.fetchone()
     conn.close()
 
-    return dict(row) if row else None
+    return dict_row(cursor, row) if row else None
 
 
 def update_transaction(
@@ -423,13 +436,14 @@ def get_summary(
     """, params)
 
     row = cursor.fetchone()
+    result = dict_row(cursor, row)
     conn.close()
 
     return {
-        "total_income": row["total_income"],
-        "total_expense": row["total_expense"],
-        "balance": row["total_income"] - row["total_expense"],
-        "transaction_count": row["transaction_count"]
+        "total_income": result["total_income"],
+        "total_expense": result["total_expense"],
+        "balance": result["total_income"] - result["total_expense"],
+        "transaction_count": result["transaction_count"]
     }
 
 
@@ -475,7 +489,7 @@ def get_stats_by_category(
     rows = cursor.fetchall()
     conn.close()
 
-    return [dict(row) for row in rows]
+    return [dict_row(cursor, row) for row in rows]
 
 
 def get_stats_by_date(
@@ -523,7 +537,7 @@ def get_stats_by_date(
     rows = cursor.fetchall()
     conn.close()
 
-    return [dict(row) for row in rows]
+    return [dict_row(cursor, row) for row in rows]
 
 
 def get_categories(user_id: str) -> list:
@@ -540,7 +554,7 @@ def get_categories(user_id: str) -> list:
     rows = cursor.fetchall()
     conn.close()
 
-    return [row["category"] for row in rows]
+    return [dict_row(cursor, row)["category"] for row in rows]
 
 
 def get_all_transactions_for_export(
@@ -574,7 +588,7 @@ def get_all_transactions_for_export(
     rows = cursor.fetchall()
     conn.close()
 
-    return [dict(row) for row in rows]
+    return [dict_row(cursor, row) for row in rows]
 
 
 # ============ 預算相關函式 ============
@@ -592,7 +606,7 @@ def get_budget(user_id: str) -> Optional[dict]:
     row = cursor.fetchone()
     conn.close()
 
-    return dict(row) if row else None
+    return dict_row(cursor, row) if row else None
 
 
 def set_budget(user_id: str, monthly_budget: float) -> int:
@@ -605,7 +619,8 @@ def set_budget(user_id: str, monthly_budget: float) -> int:
         SELECT id FROM budgets WHERE user_id = ? AND category IS NULL
     """, (user_id,))
 
-    existing = cursor.fetchone()
+    existing_row = cursor.fetchone()
+    existing = dict_row(cursor, existing_row) if existing_row else None
 
     if existing:
         cursor.execute("""
@@ -694,7 +709,7 @@ def get_recurring_transactions(user_id: str) -> list:
     rows = cursor.fetchall()
     conn.close()
 
-    return [dict(row) for row in rows]
+    return [dict_row(cursor, row) for row in rows]
 
 
 def get_recurring_transaction_by_id(recurring_id: int, user_id: str) -> Optional[dict]:
@@ -710,7 +725,7 @@ def get_recurring_transaction_by_id(recurring_id: int, user_id: str) -> Optional
     row = cursor.fetchone()
     conn.close()
 
-    return dict(row) if row else None
+    return dict_row(cursor, row) if row else None
 
 
 def update_recurring_transaction(
@@ -808,9 +823,11 @@ def execute_recurring_transactions():
     """, (day_of_month, today_str))
 
     rows = cursor.fetchall()
+    # 先轉換所有 rows 為 dict
+    rows_dict = [dict_row(cursor, row) for row in rows]
     executed_count = 0
 
-    for row in rows:
+    for row in rows_dict:
         # 新增交易
         cursor.execute("""
             INSERT INTO transactions (user_id, type, amount, category, description)
@@ -866,7 +883,7 @@ def get_habits(user_id: str) -> list:
     rows = cursor.fetchall()
     conn.close()
 
-    return [dict(row) for row in rows]
+    return [dict_row(cursor, row) for row in rows]
 
 
 def get_habit_by_id(habit_id: int, user_id: str) -> Optional[dict]:
@@ -882,7 +899,7 @@ def get_habit_by_id(habit_id: int, user_id: str) -> Optional[dict]:
     row = cursor.fetchone()
     conn.close()
 
-    return dict(row) if row else None
+    return dict_row(cursor, row) if row else None
 
 
 def get_habit_by_name(user_id: str, name: str) -> Optional[dict]:
@@ -898,7 +915,7 @@ def get_habit_by_name(user_id: str, name: str) -> Optional[dict]:
     row = cursor.fetchone()
     conn.close()
 
-    return dict(row) if row else None
+    return dict_row(cursor, row) if row else None
 
 
 def update_habit(habit_id: int, user_id: str, name: str = None, emoji: str = None) -> bool:
@@ -971,7 +988,7 @@ def checkin_habit(user_id: str, habit_id: int, check_date: str = None) -> bool:
         """, (user_id, habit_id, check_date))
         conn.commit()
         success = True
-    except sqlite3.IntegrityError:
+    except Exception:
         # 已經打卡過了
         success = False
 
@@ -1026,7 +1043,7 @@ def get_habit_checkins(user_id: str, habit_id: int, start_date: str = None, end_
     rows = cursor.fetchall()
     conn.close()
 
-    return [row["check_date"] for row in rows]
+    return [dict_row(cursor, row)["check_date"] for row in rows]
 
 
 def get_today_checkins(user_id: str) -> list:
@@ -1049,7 +1066,7 @@ def get_today_checkins(user_id: str) -> list:
     rows = cursor.fetchall()
     conn.close()
 
-    return [dict(row) for row in rows]
+    return [dict_row(cursor, row) for row in rows]
 
 
 def get_habit_streak(user_id: str, habit_id: int) -> int:
@@ -1064,15 +1081,16 @@ def get_habit_streak(user_id: str, habit_id: int) -> int:
     """, (user_id, habit_id))
 
     rows = cursor.fetchall()
+    rows_dict = [dict_row(cursor, row) for row in rows]
     conn.close()
 
-    if not rows:
+    if not rows_dict:
         return 0
 
     streak = 0
     today = datetime.now().date()
 
-    for row in rows:
+    for row in rows_dict:
         check_date = datetime.strptime(row["check_date"], "%Y-%m-%d").date()
         expected_date = today - timedelta(days=streak)
 
@@ -1117,9 +1135,10 @@ def get_habit_stats(user_id: str, habit_id: int, year: int = None, month: int = 
     """, (user_id, habit_id, start_date, end_date))
 
     row = cursor.fetchone()
+    result = dict_row(cursor, row)
     conn.close()
 
-    checked_days = row["count"]
+    checked_days = result["count"]
 
     # 計算到今天為止的天數（如果是當月）
     today = datetime.now()
