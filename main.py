@@ -217,56 +217,111 @@ def handle_text_message(event: MessageEvent):
                 reply_text = f"今天「{habit_name}」已經打卡過了！\n\n🔥 連續 {streak} 天"
 
     else:
-        # 先檢查是否為習慣名稱（直接打卡）
+        # 先檢查是否為「日期 + 習慣」格式（補打）
         from database import get_habit_by_name, checkin_habit, get_habit_streak
-        habit = get_habit_by_name(user_id, text)
+        import re
+        from datetime import datetime, timedelta
 
-        if habit:
-            success = checkin_habit(user_id, habit["id"])
-            streak = get_habit_streak(user_id, habit["id"])
+        check_date = None
+        habit_name = None
+        date_display = None
 
-            if success:
-                reply_text = (
-                    f"✅ {habit['emoji']} {habit['name']} 打卡成功！\n\n"
-                    f"🔥 連續 {streak} 天\n\n"
-                    f"繼續保持！💪"
-                )
-            else:
-                reply_text = f"今天「{habit['name']}」已經打卡過了！\n\n🔥 連續 {streak} 天"
+        # 解析日期格式
+        # 昨天/前天 + 習慣
+        if text.startswith("昨天 ") or text.startswith("昨天"):
+            habit_name = text.replace("昨天", "").strip()
+            check_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+            date_display = "昨天"
+        elif text.startswith("前天 ") or text.startswith("前天"):
+            habit_name = text.replace("前天", "").strip()
+            check_date = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
+            date_display = "前天"
         else:
-            # 嘗試解析為記帳內容
-            parsed = parse_transaction(text)
+            # M/D 或 MM/DD 或 YYYY/M/D 格式
+            date_match = re.match(r'^(\d{4}/)?(\d{1,2})/(\d{1,2})\s+(.+)$', text)
+            if date_match:
+                year = int(date_match.group(1)[:-1]) if date_match.group(1) else datetime.now().year
+                month = int(date_match.group(2))
+                day = int(date_match.group(3))
+                habit_name = date_match.group(4).strip()
+                try:
+                    check_date = f"{year}-{month:02d}-{day:02d}"
+                    # 驗證日期有效
+                    datetime.strptime(check_date, "%Y-%m-%d")
+                    date_display = f"{month}/{day}"
+                except ValueError:
+                    check_date = None
 
-            if parsed:
-                # 儲存到資料庫
-                transaction_id = add_transaction(
-                    user_id=user_id,
-                    trans_type=parsed.type,
-                    amount=parsed.amount,
-                    category=parsed.category,
-                    description=parsed.description
-                )
+        # 如果有解析到日期和習慣名稱，嘗試補打
+        if check_date and habit_name:
+            habit = get_habit_by_name(user_id, habit_name)
+            if habit:
+                success = checkin_habit(user_id, habit["id"], check_date)
+                streak = get_habit_streak(user_id, habit["id"])
 
-                # 回覆確認訊息
-                type_text = "收入" if parsed.type == "income" else "支出"
-                reply_text = (
-                    f"✅ 記帳成功！\n\n"
-                    f"類型：{type_text}\n"
-                    f"分類：{parsed.category}\n"
-                    f"金額：${parsed.amount:,.0f}\n"
-                    f"描述：{parsed.description}"
-                )
+                if success:
+                    reply_text = (
+                        f"✅ {habit['emoji']} {habit_name} 補打成功！\n\n"
+                        f"📅 日期：{date_display}\n"
+                        f"🔥 連續 {streak} 天\n\n"
+                        f"繼續保持！💪"
+                    )
+                else:
+                    reply_text = f"「{habit_name}」在 {date_display} 已經打卡過了！"
             else:
-                # 無法解析，顯示使用說明
-                reply_text = (
-                    f"📝 記帳小幫手\n"
-                    f"━━━━━━━━━━━━━━\n"
-                    f"請輸入記帳內容，例如：\n"
-                    f"• 午餐 150\n"
-                    f"• 交通費 50\n"
-                    f"• 收入 薪水 50000\n\n"
-                    f"或使用語音輸入更方便！"
-                )
+                # 習慣不存在，可能是記帳，繼續往下處理
+                pass
+
+        if reply_text is None:
+            # 先檢查是否為習慣名稱（直接打卡）
+            habit = get_habit_by_name(user_id, text)
+
+            if habit:
+                success = checkin_habit(user_id, habit["id"])
+                streak = get_habit_streak(user_id, habit["id"])
+
+                if success:
+                    reply_text = (
+                        f"✅ {habit['emoji']} {habit['name']} 打卡成功！\n\n"
+                        f"🔥 連續 {streak} 天\n\n"
+                        f"繼續保持！💪"
+                    )
+                else:
+                    reply_text = f"今天「{habit['name']}」已經打卡過了！\n\n🔥 連續 {streak} 天"
+            else:
+                # 嘗試解析為記帳內容
+                parsed = parse_transaction(text)
+
+                if parsed:
+                    # 儲存到資料庫
+                    transaction_id = add_transaction(
+                        user_id=user_id,
+                        trans_type=parsed.type,
+                        amount=parsed.amount,
+                        category=parsed.category,
+                        description=parsed.description
+                    )
+
+                    # 回覆確認訊息
+                    type_text = "收入" if parsed.type == "income" else "支出"
+                    reply_text = (
+                        f"✅ 記帳成功！\n\n"
+                        f"類型：{type_text}\n"
+                        f"分類：{parsed.category}\n"
+                        f"金額：${parsed.amount:,.0f}\n"
+                        f"描述：{parsed.description}"
+                    )
+                else:
+                    # 無法解析，顯示使用說明
+                    reply_text = (
+                        f"📝 記帳小幫手\n"
+                        f"━━━━━━━━━━━━━━\n"
+                        f"請輸入記帳內容，例如：\n"
+                        f"• 午餐 150\n"
+                        f"• 交通費 50\n"
+                        f"• 收入 薪水 50000\n\n"
+                        f"或使用語音輸入更方便！"
+                    )
 
     # 回覆訊息（帶快速回覆按鈕）
     with ApiClient(configuration) as api_client:

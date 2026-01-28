@@ -186,6 +186,21 @@
             line-height: 1;
         }
 
+        .calendar-day.clickable {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-day.clickable:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .calendar-day.future {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
         /* 新增習慣按鈕 */
         .add-habit-card {
             background: var(--warm-beige);
@@ -659,22 +674,53 @@
             }
 
             // 這個月的日子
+            const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const thisDate = new Date(year, month, day);
                 const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
                 const isChecked = checkedDates.includes(dateStr);
+                const isFuture = thisDate > todayDate;
 
                 let classes = ['calendar-day', 'current-month'];
                 if (isToday) classes.push('today');
                 if (isChecked) classes.push('checked');
+                if (isFuture) {
+                    classes.push('future');
+                } else {
+                    classes.push('clickable');
+                }
 
                 // 有打卡的日子顯示 emoji
                 const content = isChecked ? `<span class="check-mark">${emoji}</span>` : day;
-                html += `<div class="${classes.join(' ')}">${content}</div>`;
+                const onclick = isFuture ? '' : `onclick="toggleDateCheckin(${habitId}, '${dateStr}', ${isChecked})"`;
+                html += `<div class="${classes.join(' ')}" ${onclick}>${content}</div>`;
             }
 
             html += '</div>';
             container.innerHTML = html;
+        }
+
+        // 點擊日期補打/取消
+        async function toggleDateCheckin(habitId, dateStr, isChecked) {
+            const habit = habits.find(h => h.id === habitId);
+            if (!habit) return;
+
+            try {
+                if (isChecked) {
+                    // 取消打卡
+                    await API.delete(`/api/habits/${habitId}/checkin?date=${dateStr}`);
+                    Utils.showToast(`已取消 ${dateStr.slice(5).replace('-', '/')} 的打卡`);
+                } else {
+                    // 補打
+                    await API.post(`/api/habits/${habitId}/checkin`, { date: dateStr });
+                    Utils.showToast(`${dateStr.slice(5).replace('-', '/')} 補打成功！`);
+                }
+                // 只重新渲染日曆，不重新載入所有習慣
+                renderCalendar(habitId);
+            } catch (error) {
+                Utils.showToast(error.message || '操作失敗', 'error');
+            }
         }
 
         // 切換打卡
