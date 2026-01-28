@@ -118,14 +118,17 @@
             errorMessage.classList.remove('hidden');
         }
 
-        // 檢查是否已登入
+        // 檢查是否已登入（使用直接 fetch，不觸發自動重定向）
         (async () => {
             try {
-                await API.getCurrentUser();
-                // 已登入，導向儀表板
-                window.location.href = '/static/dashboard.html';
-            } catch (e) {
+                const response = await fetch('/auth/me', { credentials: 'same-origin' });
+                if (response.ok) {
+                    // 已登入，導向儀表板
+                    window.location.href = '/static/dashboard.html';
+                }
                 // 未登入，留在登入頁
+            } catch (e) {
+                // 網路錯誤或其他問題，留在登入頁
             }
         })();
     </script>
