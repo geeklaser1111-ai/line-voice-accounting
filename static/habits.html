@@ -175,6 +175,12 @@
             background: var(--income-color);
             color: white;
             font-weight: 600;
+            position: relative;
+        }
+
+        .calendar-day .check-mark {
+            font-size: 16px;
+            line-height: 1;
         }
 
         /* 新增習慣按鈕 */
@@ -582,6 +588,9 @@
             const container = document.getElementById(`calendar-${habitId}`);
             if (!container) return;
 
+            const habit = habits.find(h => h.id === habitId);
+            const emoji = habit?.emoji || '✓';
+
             const year = currentMonth.getFullYear();
             const month = currentMonth.getMonth();
 
@@ -628,7 +637,9 @@
                 if (isToday) classes.push('today');
                 if (isChecked) classes.push('checked');
 
-                html += `<div class="${classes.join(' ')}">${day}</div>`;
+                // 有打卡的日子顯示 emoji
+                const content = isChecked ? `<span class="check-mark">${emoji}</span>` : day;
+                html += `<div class="${classes.join(' ')}">${content}</div>`;
             }
 
             html += '</div>';
