@@ -9,7 +9,6 @@ from fastapi import APIRouter, Request
 from typing import Optional
 
 from database import get_connection
-from routers.auth import get_user_id_from_request
 
 router = APIRouter(prefix="/api/energy", tags=["能量幣"])
 
@@ -90,6 +89,7 @@ async def get_energy_coins(
     end_date: Optional[str] = None
 ):
     """取得能量幣統計"""
+    from routers.auth import get_user_id_from_request
     user_id = get_user_id_from_request(request)
 
     conn = get_connection()
@@ -130,6 +130,7 @@ async def get_energy_history(
     limit: int = 20
 ):
     """取得能量幣相關交易記錄"""
+    from routers.auth import get_user_id_from_request
     user_id = get_user_id_from_request(request)
 
     conn = get_connection()
