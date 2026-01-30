@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>固定支出 - LINE 語音記帳</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* 固定支出專屬樣式 */
+        .summary-card {
+            background: linear-gradient(135deg, #FF8A65 0%, #FF7043 100%);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            color: white;
+            margin-bottom: 28px;
+            box-shadow: var(--shadow-warm);
+        }
+
+        .summary-card h2 {
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .summary-amount {
+            font-size: 36px;
+            font-weight: 700;
+        }
+
+        .summary-count {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-top: 8px;
+        }
+
+        .reminders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+
+        .reminder-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid rgba(232, 221, 211, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .reminder-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-warm);
+        }
+
+        .reminder-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .reminder-info {
+            flex: 1;
+        }
+
+        .reminder-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .reminder-date {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: var(--warm-beige);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .reminder-amount {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--expense-color);
+        }
+
+        .reminder-actions {
+            position: relative;
+        }
+
+        .reminder-menu-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+        }
+
+        .reminder-menu-btn:hover {
+            background: var(--warm-beige);
+            color: var(--text-dark);
+        }
+
+        .reminder-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-warm);
+            padding: 8px;
+            min-width: 120px;
+            display: none;
+            z-index: 10;
+        }
+
+        .reminder-menu.active {
+            display: block;
+        }
+
+        .reminder-menu-item {
+            display: block;
+            width: 100%;
+            padding: 10px 12px;
+            border: none;
+            background: transparent;
+            text-align: left;
+            font-size: 14px;
+            color: var(--text-dark);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .reminder-menu-item:hover {
+            background: var(--warm-beige);
+        }
+
+        .reminder-menu-item.danger {
+            color: var(--expense-color);
+        }
+
+        /* 新增提醒卡片 */
+        .add-reminder-card {
+            background: var(--warm-beige);
+            border: 2px dashed var(--warm-sand);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 160px;
+        }
+
+        .add-reminder-card:hover {
+            border-color: var(--warm-caramel);
+            background: var(--warm-cream);
+        }
+
+        .add-reminder-icon {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: var(--warm-caramel);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .add-reminder-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        /* 空狀態 */
+        .empty-reminders {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-reminders-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .empty-reminders h3 {
+            font-size: 20px;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .empty-reminders p {
+            color: var(--text-light);
+            margin-bottom: 24px;
+        }
+
+        /* 說明文字 */
+        .page-note {
+            background: var(--warm-beige);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .page-note-icon {
+            font-size: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .reminders-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .summary-amount {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- 側邊欄 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
+                        <circle cx="50" cy="50" r="45" fill="#06C755"/>
+                        <path d="M30 50 L45 65 L70 40" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>語音記帳</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/static/dashboard.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    <span>儀表板</span>
+                </a>
+                <a href="/static/transactions.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="6" x2="21" y2="6"/>
+                        <line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                    <span>記帳明細</span>
+                </a>
+                <a href="/static/stats.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    <span>統計圖表</span>
+                </a>
+                <a href="/static/energy.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                    <span>能量幣</span>
+                </a>
+                <a href="/static/habits.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    <span>習慣追蹤</span>
+                </a>
+                <a href="/static/reminders.html" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    <span>固定支出</span>
+                </a>
+                <a href="/static/settings.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    <span>設定</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <img src="/static/img/default-avatar.png" alt="Avatar" class="user-avatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23ddd%22/><circle cx=%2250%22 cy=%2240%22 r=%2215%22 fill=%22%23999%22/><path d=%22M25 85 Q50 60 75 85%22 fill=%22%23999%22/></svg>'">
+                    <span class="user-name">載入中...</span>
+                </div>
+                <button class="btn-logout">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    登出
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主內容 -->
+        <main class="main-content">
+            <header class="page-header">
+                <h1 class="page-title">固定支出</h1>
+                <p class="page-subtitle">記錄每月固定支出項目，方便查閱</p>
+            </header>
+
+            <!-- 說明 -->
+            <div class="page-note">
+                <span class="page-note-icon">💡</span>
+                <span>此功能僅供記錄提醒用途，不會自動記錄到帳本中</span>
+            </div>
+
+            <!-- 統計卡片 -->
+            <div class="summary-card">
+                <h2>每月固定支出總額</h2>
+                <div class="summary-amount" id="totalAmount">$0</div>
+                <div class="summary-count" id="reminderCount">共 0 項固定支出</div>
+            </div>
+
+            <!-- 提醒列表 -->
+            <div class="reminders-grid" id="remindersGrid">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 新增/編輯提醒彈窗 -->
+    <div class="modal-overlay" id="reminderModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="reminderModalTitle">新增固定支出</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="reminderForm">
+                    <input type="hidden" id="reminderId">
+                    <div class="form-group">
+                        <label class="form-label">項目名稱</label>
+                        <input type="text" id="reminderName" class="form-input" required placeholder="例如：房租、電費、網路費">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">金額</label>
+                        <input type="number" id="reminderAmount" class="form-input" required placeholder="輸入金額" min="1" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">每月幾號</label>
+                        <select id="reminderDay" class="form-input" required>
+                            ${Array.from({length: 28}, (_, i) => `<option value="${i + 1}">${i + 1} 號</option>`).join('')}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveReminder()">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script>
+        let reminders = [];
+
+        // 擴展 API
+        API.getReminders = () => API.get('/api/reminders');
+        API.createReminder = (data) => API.post('/api/reminders', data);
+        API.updateReminder = (id, data) => API.put(`/api/reminders/${id}`, data);
+        API.deleteReminder = (id) => API.delete(`/api/reminders/${id}`);
+
+        // 初始化
+        async function init() {
+            if (!await Auth.requireAuth()) return;
+            Auth.initUserDisplay();
+            Auth.bindLogoutButton();
+
+            // 動態生成日期選項
+            const daySelect = document.getElementById('reminderDay');
+            daySelect.innerHTML = Array.from({length: 28}, (_, i) =>
+                `<option value="${i + 1}">${i + 1} 號</option>`
+            ).join('');
+
+            await loadReminders();
+
+            // 點擊其他地方關閉選單
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.reminder-actions')) {
+                    document.querySelectorAll('.reminder-menu').forEach(m => m.classList.remove('active'));
+                }
+            });
+        }
+
+        // 載入提醒
+        async function loadReminders() {
+            try {
+                const data = await API.getReminders();
+                reminders = data.items;
+
+                // 更新統計
+                document.getElementById('totalAmount').textContent = `$${data.total.toLocaleString()}`;
+                document.getElementById('reminderCount').textContent = `共 ${reminders.length} 項固定支出`;
+
+                renderReminders();
+            } catch (error) {
+                console.error('載入提醒失敗:', error);
+            }
+        }
+
+        // 渲染提醒列表
+        function renderReminders() {
+            const grid = document.getElementById('remindersGrid');
+
+            if (reminders.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-reminders" style="grid-column: 1 / -1;">
+                        <div class="empty-reminders-icon">📋</div>
+                        <h3>還沒有任何固定支出</h3>
+                        <p>記錄你的固定支出項目，方便每月查閱</p>
+                        <button class="btn btn-primary" onclick="openAddModal()">新增固定支出</button>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = reminders.map(reminder => `
+                <div class="reminder-card" data-reminder-id="${reminder.id}">
+                    <div class="reminder-header">
+                        <div class="reminder-info">
+                            <div class="reminder-name">${reminder.name}</div>
+                            <div class="reminder-date">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                                每月 ${reminder.day_of_month} 號
+                            </div>
+                        </div>
+                        <div class="reminder-actions">
+                            <button class="reminder-menu-btn" onclick="toggleMenu(${reminder.id})">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="1"/>
+                                    <circle cx="12" cy="5" r="1"/>
+                                    <circle cx="12" cy="19" r="1"/>
+                                </svg>
+                            </button>
+                            <div class="reminder-menu" id="menu-${reminder.id}">
+                                <button class="reminder-menu-item" onclick="openEditModal(${reminder.id})">編輯</button>
+                                <button class="reminder-menu-item danger" onclick="deleteReminder(${reminder.id})">刪除</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="reminder-amount">$${reminder.amount.toLocaleString()}</div>
+                </div>
+            `).join('');
+
+            // 新增提醒卡片
+            html += `
+                <div class="add-reminder-card" onclick="openAddModal()">
+                    <div class="add-reminder-icon">+</div>
+                    <div class="add-reminder-text">新增固定支出</div>
+                </div>
+            `;
+
+            grid.innerHTML = html;
+        }
+
+        // 切換選單
+        function toggleMenu(reminderId) {
+            const menu = document.getElementById(`menu-${reminderId}`);
+            document.querySelectorAll('.reminder-menu').forEach(m => {
+                if (m !== menu) m.classList.remove('active');
+            });
+            menu.classList.toggle('active');
+        }
+
+        // 開啟新增彈窗
+        function openAddModal() {
+            document.getElementById('reminderModalTitle').textContent = '新增固定支出';
+            document.getElementById('reminderId').value = '';
+            document.getElementById('reminderName').value = '';
+            document.getElementById('reminderAmount').value = '';
+            document.getElementById('reminderDay').value = '1';
+            document.getElementById('reminderModal').classList.add('active');
+        }
+
+        // 開啟編輯彈窗
+        function openEditModal(reminderId) {
+            const reminder = reminders.find(r => r.id === reminderId);
+            if (!reminder) return;
+
+            document.getElementById('reminderModalTitle').textContent = '編輯固定支出';
+            document.getElementById('reminderId').value = reminderId;
+            document.getElementById('reminderName').value = reminder.name;
+            document.getElementById('reminderAmount').value = reminder.amount;
+            document.getElementById('reminderDay').value = reminder.day_of_month;
+            document.getElementById('reminderModal').classList.add('active');
+
+            // 關閉選單
+            document.querySelectorAll('.reminder-menu').forEach(m => m.classList.remove('active'));
+        }
+
+        // 關閉彈窗
+        function closeModal() {
+            document.getElementById('reminderModal').classList.remove('active');
+        }
+
+        // 儲存提醒
+        async function saveReminder() {
+            const id = document.getElementById('reminderId').value;
+            const name = document.getElementById('reminderName').value.trim();
+            const amount = parseFloat(document.getElementById('reminderAmount').value);
+            const day_of_month = parseInt(document.getElementById('reminderDay').value);
+
+            if (!name) {
+                Utils.showToast('請輸入項目名稱', 'error');
+                return;
+            }
+
+            if (!amount || amount <= 0) {
+                Utils.showToast('請輸入有效金額', 'error');
+                return;
+            }
+
+            try {
+                if (id) {
+                    await API.updateReminder(id, { name, amount, day_of_month });
+                    Utils.showToast('更新成功');
+                } else {
+                    await API.createReminder({ name, amount, day_of_month });
+                    Utils.showToast('新增成功');
+                }
+                closeModal();
+                await loadReminders();
+            } catch (error) {
+                Utils.showToast(error.message || '操作失敗', 'error');
+            }
+        }
+
+        // 刪除提醒
+        async function deleteReminder(reminderId) {
+            const reminder = reminders.find(r => r.id === reminderId);
+            if (!reminder) return;
+
+            if (!confirm(`確定要刪除「${reminder.name}」嗎？`)) {
+                return;
+            }
+
+            try {
+                await API.deleteReminder(reminderId);
+                Utils.showToast('刪除成功');
+                await loadReminders();
+            } catch (error) {
+                Utils.showToast('刪除失敗', 'error');
+            }
+        }
+
+        init();
+    </script>
+
+    <!-- 手機版底部導航 -->
+    <nav class="mobile-nav">
+        <div class="mobile-nav-items">
+            <a href="/static/dashboard.html" class="mobile-nav-item" data-page="dashboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                <span>儀表板</span>
+            </a>
+            <a href="/static/transactions.html" class="mobile-nav-item" data-page="transactions">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="8" y1="6" x2="21" y2="6"/>
+                    <line x1="8" y1="12" x2="21" y2="12"/>
+                    <line x1="8" y1="18" x2="21" y2="18"/>
+                    <line x1="3" y1="6" x2="3.01" y2="6"/>
+                    <line x1="3" y1="12" x2="3.01" y2="12"/>
+                    <line x1="3" y1="18" x2="3.01" y2="18"/>
+                </svg>
+                <span>明細</span>
+            </a>
+            <a href="/static/reminders.html" class="mobile-nav-item active" data-page="reminders">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                <span>固定支出</span>
+            </a>
+            <a href="/static/settings.html" class="mobile-nav-item" data-page="settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                <span>設定</span>
+            </a>
+        </div>
+    </nav>
+</body>
+</html>

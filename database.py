@@ -135,6 +135,23 @@ def init_db():
         ON habit_checkins(user_id, habit_id)
     """)
 
+    # 固定支出提醒表
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS expense_reminders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            amount REAL NOT NULL,
+            day_of_month INTEGER NOT NULL,
+            is_active INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_expense_reminders_user_id
+        ON expense_reminders(user_id)
+    """)
+
     conn.commit()
     conn.close()
 
@@ -1157,6 +1174,132 @@ def get_habit_stats(user_id: str, habit_id: int, year: int = None, month: int = 
         "days_passed": days_passed,
         "completion_rate": round(completion_rate, 1)
     }
+
+
+# ============ 固定支出提醒相關函式 ============
+
+def create_expense_reminder(
+    user_id: str,
+    name: str,
+    amount: float,
+    day_of_month: int
+) -> int:
+    """建立固定支出提醒"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO expense_reminders (user_id, name, amount, day_of_month)
+        VALUES (?, ?, ?, ?)
+    """, (user_id, name, amount, day_of_month))
+
+    reminder_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return reminder_id
+
+
+def get_expense_reminders(user_id: str) -> list:
+    """取得用戶的所有固定支出提醒"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT * FROM expense_reminders
+        WHERE user_id = ? AND is_active = 1
+        ORDER BY day_of_month ASC
+    """, (user_id,))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [dict_row(cursor, row) for row in rows]
+
+
+def get_expense_reminder_by_id(reminder_id: int, user_id: str) -> Optional[dict]:
+    """取得單筆固定支出提醒"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT * FROM expense_reminders
+        WHERE id = ? AND user_id = ?
+    """, (reminder_id, user_id))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    return dict_row(cursor, row) if row else None
+
+
+def update_expense_reminder(
+    reminder_id: int,
+    user_id: str,
+    name: Optional[str] = None,
+    amount: Optional[float] = None,
+    day_of_month: Optional[int] = None,
+    is_active: Optional[int] = None
+) -> bool:
+    """更新固定支出提醒"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 確認記錄存在
+    cursor.execute("""
+        SELECT id FROM expense_reminders WHERE id = ? AND user_id = ?
+    """, (reminder_id, user_id))
+
+    if not cursor.fetchone():
+        conn.close()
+        return False
+
+    updates = []
+    params = []
+
+    if name is not None:
+        updates.append("name = ?")
+        params.append(name)
+    if amount is not None:
+        updates.append("amount = ?")
+        params.append(amount)
+    if day_of_month is not None:
+        updates.append("day_of_month = ?")
+        params.append(day_of_month)
+    if is_active is not None:
+        updates.append("is_active = ?")
+        params.append(is_active)
+
+    if not updates:
+        conn.close()
+        return True
+
+    params.extend([reminder_id, user_id])
+    cursor.execute(f"""
+        UPDATE expense_reminders
+        SET {", ".join(updates)}
+        WHERE id = ? AND user_id = ?
+    """, params)
+
+    conn.commit()
+    conn.close()
+    return True
+
+
+def delete_expense_reminder(reminder_id: int, user_id: str) -> bool:
+    """刪除固定支出提醒"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM expense_reminders WHERE id = ? AND user_id = ?
+    """, (reminder_id, user_id))
+
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+
+    return deleted
 
 
 # 初始化資料庫

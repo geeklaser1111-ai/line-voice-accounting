@@ -23,7 +23,7 @@ from database import add_transaction, get_summary
 from datetime import date
 
 # 引入路由
-from routers import auth, transactions, stats, export, budget, recurring, energy, habits
+from routers import auth, transactions, stats, export, budget, recurring, energy, habits, reminders
 
 app = FastAPI(title="LINE 語音記帳機器人")
 
@@ -36,6 +36,7 @@ app.include_router(budget.router)
 app.include_router(recurring.router)
 app.include_router(energy.router)
 app.include_router(habits.router)
+app.include_router(reminders.router)
 
 # 掛載靜態檔案
 app.mount("/static", StaticFiles(directory="static"), name="static")
