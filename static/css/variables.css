@@ -1,86 +1,138 @@
-/* CSS 變數定義 */
+/* ============ 設計系統 - 溫暖質感主題 ============ */
 :root {
-    /* LINE 品牌色 */
+    /* ===== 品牌色 ===== */
     --line-green: #06C755;
     --line-green-dark: #05A847;
     --line-green-light: #4CD97A;
 
-    /* 主題色 */
-    --primary: #4A90D9;
-    --primary-dark: #3A7BC8;
-    --primary-light: #6BA5E7;
+    /* ===== 溫暖主色調 ===== */
+    --warm-cream: #FDF8F3;
+    --warm-cream-dark: #FAF3EB;
+    --warm-beige: #F5EBE0;
+    --warm-sand: #E8DDD3;
+    --warm-caramel: #D4A574;
+    --warm-terracotta: #C68B59;
+    --warm-brown: #8B7355;
+    --warm-cocoa: #5D4E3C;
+    --warm-espresso: #4A3F31;
 
-    /* 功能色 */
-    --success: #06C755;
-    --danger: #E74C3C;
-    --warning: #F39C12;
-    --info: #3498DB;
+    /* ===== 功能色 ===== */
+    --accent-coral: #E8998D;
+    --accent-coral-deep: #D4837A;
+    --accent-sage: #A8C5A8;
+    --accent-sage-deep: #8FB58F;
+    --accent-sky: #9ECFEA;
+    --accent-lavender: #C5B4E3;
+    --accent-gold: #E8C87D;
+    --accent-peach: #F5C5A8;
 
-    /* 收入/支出色 */
-    --income-color: #06C755;
-    --income-bg: #E8F5E9;
-    --expense-color: #E74C3C;
-    --expense-bg: #FFEBEE;
+    /* ===== 收入/支出/結餘 ===== */
+    --income-color: #7CB587;
+    --income-color-deep: #5FA06A;
+    --income-bg: rgba(124, 181, 135, 0.12);
+    --income-bg-solid: #EDF7EF;
 
-    /* 灰階 */
-    --gray-50: #F8F9FA;
-    --gray-100: #F1F3F5;
-    --gray-200: #E9ECEF;
-    --gray-300: #DEE2E6;
-    --gray-400: #CED4DA;
-    --gray-500: #ADB5BD;
-    --gray-600: #868E96;
-    --gray-700: #495057;
-    --gray-800: #343A40;
-    --gray-900: #212529;
+    --expense-color: #D98E8E;
+    --expense-color-deep: #C67777;
+    --expense-bg: rgba(217, 142, 142, 0.12);
+    --expense-bg-solid: #FDF0F0;
 
-    /* 文字色 */
-    --text-primary: #212529;
-    --text-secondary: #6C757D;
-    --text-muted: #ADB5BD;
+    --balance-color: #7BAFD4;
+    --balance-color-deep: #5A96C4;
+    --balance-bg: rgba(123, 175, 212, 0.12);
+    --balance-bg-solid: #EEF5FA;
 
-    /* 背景色 */
+    /* ===== 文字色彩 ===== */
+    --text-primary: #3D3426;
+    --text-secondary: #6B5D4D;
+    --text-tertiary: #9A8B7A;
+    --text-muted: #B8A99A;
+    --text-inverse: #FFFAF5;
+
+    /* ===== 背景色 ===== */
     --bg-primary: #FFFFFF;
-    --bg-secondary: #F8F9FA;
-    --bg-tertiary: #E9ECEF;
+    --bg-secondary: var(--warm-cream);
+    --bg-tertiary: var(--warm-beige);
+    --bg-elevated: #FFFFFF;
 
-    /* 陰影 */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    /* ===== 邊框色 ===== */
+    --border-light: rgba(232, 221, 211, 0.6);
+    --border-medium: var(--warm-sand);
+    --border-strong: var(--warm-brown);
 
-    /* 圓角 */
-    --radius-sm: 4px;
-    --radius: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
+    /* ===== 陰影系統 ===== */
+    --shadow-xs: 0 1px 2px rgba(139, 115, 85, 0.04);
+    --shadow-sm: 0 2px 8px rgba(139, 115, 85, 0.06);
+    --shadow-md: 0 4px 16px rgba(139, 115, 85, 0.08);
+    --shadow-lg: 0 8px 32px rgba(139, 115, 85, 0.12);
+    --shadow-xl: 0 16px 48px rgba(139, 115, 85, 0.16);
+    --shadow-warm: 0 8px 32px rgba(212, 165, 116, 0.18);
+    --shadow-glow: 0 0 24px rgba(212, 165, 116, 0.25);
+    --shadow-inset: inset 0 2px 4px rgba(139, 115, 85, 0.06);
+
+    /* ===== 圓角系統 ===== */
+    --radius-xs: 8px;
+    --radius-sm: 12px;
+    --radius-md: 16px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    --radius-2xl: 36px;
     --radius-full: 9999px;
 
-    /* 間距 */
-    --spacing-xs: 4px;
-    --spacing-sm: 8px;
-    --spacing-md: 16px;
-    --spacing-lg: 24px;
-    --spacing-xl: 32px;
-    --spacing-2xl: 48px;
+    /* ===== 間距系統 ===== */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
 
-    /* 字體 */
-    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-size-xs: 12px;
-    --font-size-sm: 14px;
-    --font-size-base: 16px;
+    /* ===== 字體系統 ===== */
+    --font-family: 'Nunito', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', monospace;
+
+    --font-size-xs: 11px;
+    --font-size-sm: 13px;
+    --font-size-base: 15px;
+    --font-size-md: 16px;
     --font-size-lg: 18px;
     --font-size-xl: 20px;
     --font-size-2xl: 24px;
     --font-size-3xl: 30px;
+    --font-size-4xl: 36px;
+    --font-size-5xl: 48px;
 
-    /* 過渡 */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.7;
+
+    /* ===== 過渡動畫 ===== */
     --transition-fast: 0.15s ease;
-    --transition: 0.3s ease;
+    --transition-base: 0.25s ease;
+    --transition-slow: 0.4s ease;
+    --transition-bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
-    /* 容器 */
-    --container-max-width: 1200px;
-    --sidebar-width: 250px;
-    --header-height: 60px;
+    /* ===== 佈局 ===== */
+    --container-max: 1280px;
+    --sidebar-width: 260px;
+    --header-height: 64px;
+
+    /* ===== 層級 ===== */
+    --z-dropdown: 100;
+    --z-sticky: 200;
+    --z-fixed: 300;
+    --z-modal-backdrop: 400;
+    --z-modal: 500;
+    --z-popover: 600;
+    --z-toast: 700;
 }
