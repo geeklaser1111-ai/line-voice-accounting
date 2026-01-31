@@ -171,12 +171,12 @@ def create_session(user_id: str, display_name: str, picture_url: Optional[str] =
     cursor = conn.cursor()
 
     session_id = secrets.token_urlsafe(32)
-    expires_at = datetime.now() + timedelta(days=SESSION_EXPIRE_DAYS)
+    expires_at = (datetime.now() + timedelta(days=SESSION_EXPIRE_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
 
     cursor.execute("""
         INSERT INTO user_sessions (session_id, user_id, display_name, picture_url, expires_at)
         VALUES (?, ?, ?, ?, ?)
-    """, (session_id, user_id, display_name, picture_url, expires_at))
+    """, (session_id, user_id, display_name, picture_url or "", expires_at))
 
     conn.commit()
 
