@@ -153,7 +153,6 @@ def init_db():
     """)
 
     conn.commit()
-    conn.close()
 
 
 # ============ Session 相關函式 ============
@@ -172,7 +171,6 @@ def create_session(user_id: str, display_name: str, picture_url: Optional[str] =
     """, (session_id, user_id, display_name, picture_url, expires_at))
 
     conn.commit()
-    conn.close()
 
     return session_id
 
@@ -189,7 +187,6 @@ def get_session(session_id: str) -> Optional[dict]:
 
     row = cursor.fetchone()
     result = dict_row(cursor, row)
-    conn.close()
 
     return result
 
@@ -205,7 +202,6 @@ def delete_session(session_id: str) -> bool:
 
     deleted = cursor.rowcount > 0
     conn.commit()
-    conn.close()
 
     return deleted
 
@@ -220,7 +216,6 @@ def cleanup_expired_sessions():
     """)
 
     conn.commit()
-    conn.close()
 
 
 # ============ Transaction 相關函式 ============
@@ -243,7 +238,6 @@ def add_transaction(
 
     transaction_id = cursor.lastrowid
     conn.commit()
-    conn.close()
 
     return transaction_id
 
@@ -262,7 +256,6 @@ def get_transactions(user_id: str, limit: int = 10) -> list:
 
     rows = cursor.fetchall()
     result = [dict_row(cursor, row) for row in rows]
-    conn.close()
 
     return result
 
@@ -319,7 +312,6 @@ def get_transactions_paginated(
     """, params + [per_page, offset])
 
     rows = cursor.fetchall()
-    conn.close()
 
     return {
         "items": [dict_row(cursor, row) for row in rows],
@@ -341,7 +333,6 @@ def get_transaction_by_id(transaction_id: int, user_id: str) -> Optional[dict]:
     """, (transaction_id, user_id))
 
     row = cursor.fetchone()
-    conn.close()
 
     return dict_row(cursor, row) if row else None
 
@@ -364,8 +355,7 @@ def update_transaction(
     """, (transaction_id, user_id))
 
     if not cursor.fetchone():
-        conn.close()
-        return False
+            return False
 
     # 建構更新語句
     updates = []
@@ -388,8 +378,7 @@ def update_transaction(
         params.append(description)
 
     if not updates:
-        conn.close()
-        return True
+            return True
 
     params.extend([transaction_id, user_id])
     cursor.execute(f"""
@@ -399,7 +388,6 @@ def update_transaction(
     """, params)
 
     conn.commit()
-    conn.close()
     return True
 
 
@@ -414,7 +402,6 @@ def delete_transaction(transaction_id: int, user_id: str) -> bool:
 
     deleted = cursor.rowcount > 0
     conn.commit()
-    conn.close()
 
     return deleted
 
@@ -454,7 +441,6 @@ def get_summary(
 
     row = cursor.fetchone()
     result = dict_row(cursor, row)
-    conn.close()
 
     return {
         "total_income": result["total_income"],
@@ -504,7 +490,6 @@ def get_stats_by_category(
     """, params)
 
     rows = cursor.fetchall()
-    conn.close()
 
     return [dict_row(cursor, row) for row in rows]
 
@@ -552,7 +537,6 @@ def get_stats_by_date(
     """, params)
 
     rows = cursor.fetchall()
-    conn.close()
 
     return [dict_row(cursor, row) for row in rows]
 
@@ -569,7 +553,6 @@ def get_categories(user_id: str) -> list:
     """, (user_id,))
 
     rows = cursor.fetchall()
-    conn.close()
 
     return [dict_row(cursor, row)["category"] for row in rows]
 
@@ -603,7 +586,6 @@ def get_all_transactions_for_export(
     """, params)
 
     rows = cursor.fetchall()
-    conn.close()
 
     return [dict_row(cursor, row) for row in rows]
 
@@ -621,7 +603,6 @@ def get_budget(user_id: str) -> Optional[dict]:
     """, (user_id,))
 
     row = cursor.fetchone()
-    conn.close()
 
     return dict_row(cursor, row) if row else None
 
@@ -654,7 +635,6 @@ def set_budget(user_id: str, monthly_budget: float) -> int:
         budget_id = cursor.lastrowid
 
     conn.commit()
-    conn.close()
 
     return budget_id
 
@@ -707,7 +687,6 @@ def add_recurring_transaction(
 
     recurring_id = cursor.lastrowid
     conn.commit()
-    conn.close()
 
     return recurring_id
 
@@ -724,7 +703,6 @@ def get_recurring_transactions(user_id: str) -> list:
     """, (user_id,))
 
     rows = cursor.fetchall()
-    conn.close()
 
     return [dict_row(cursor, row) for row in rows]
 
@@ -740,7 +718,6 @@ def get_recurring_transaction_by_id(recurring_id: int, user_id: str) -> Optional
     """, (recurring_id, user_id))
 
     row = cursor.fetchone()
-    conn.close()
 
     return dict_row(cursor, row) if row else None
 
@@ -765,8 +742,7 @@ def update_recurring_transaction(
     """, (recurring_id, user_id))
 
     if not cursor.fetchone():
-        conn.close()
-        return False
+            return False
 
     updates = []
     params = []
@@ -791,8 +767,7 @@ def update_recurring_transaction(
         params.append(is_active)
 
     if not updates:
-        conn.close()
-        return True
+            return True
 
     params.extend([recurring_id, user_id])
     cursor.execute(f"""
@@ -802,7 +777,6 @@ def update_recurring_transaction(
     """, params)
 
     conn.commit()
-    conn.close()
     return True
 
 
@@ -817,7 +791,6 @@ def delete_recurring_transaction(recurring_id: int, user_id: str) -> bool:
 
     deleted = cursor.rowcount > 0
     conn.commit()
-    conn.close()
 
     return deleted
 
@@ -862,7 +835,6 @@ def execute_recurring_transactions():
         executed_count += 1
 
     conn.commit()
-    conn.close()
 
     return executed_count
 
@@ -881,7 +853,6 @@ def create_habit(user_id: str, name: str, emoji: str = '✓') -> int:
 
     habit_id = cursor.lastrowid
     conn.commit()
-    conn.close()
 
     return habit_id
 
@@ -898,7 +869,6 @@ def get_habits(user_id: str) -> list:
     """, (user_id,))
 
     rows = cursor.fetchall()
-    conn.close()
 
     return [dict_row(cursor, row) for row in rows]
 
@@ -914,7 +884,6 @@ def get_habit_by_id(habit_id: int, user_id: str) -> Optional[dict]:
     """, (habit_id, user_id))
 
     row = cursor.fetchone()
-    conn.close()
 
     return dict_row(cursor, row) if row else None
 
@@ -930,7 +899,6 @@ def get_habit_by_name(user_id: str, name: str) -> Optional[dict]:
     """, (user_id, name))
 
     row = cursor.fetchone()
-    conn.close()
 
     return dict_row(cursor, row) if row else None
 
@@ -951,8 +919,7 @@ def update_habit(habit_id: int, user_id: str, name: str = None, emoji: str = Non
         params.append(emoji)
 
     if not updates:
-        conn.close()
-        return True
+            return True
 
     params.extend([habit_id, user_id])
     cursor.execute(f"""
@@ -963,7 +930,6 @@ def update_habit(habit_id: int, user_id: str, name: str = None, emoji: str = Non
 
     updated = cursor.rowcount > 0
     conn.commit()
-    conn.close()
 
     return updated
 
@@ -985,7 +951,6 @@ def delete_habit(habit_id: int, user_id: str) -> bool:
 
     deleted = cursor.rowcount > 0
     conn.commit()
-    conn.close()
 
     return deleted
 
@@ -1009,7 +974,6 @@ def checkin_habit(user_id: str, habit_id: int, check_date: str = None) -> bool:
         # 已經打卡過了
         success = False
 
-    conn.close()
     return success
 
 
@@ -1028,7 +992,6 @@ def uncheckin_habit(user_id: str, habit_id: int, check_date: str = None) -> bool
 
     deleted = cursor.rowcount > 0
     conn.commit()
-    conn.close()
 
     return deleted
 
@@ -1058,7 +1021,6 @@ def get_habit_checkins(user_id: str, habit_id: int, start_date: str = None, end_
     """, params)
 
     rows = cursor.fetchall()
-    conn.close()
 
     return [dict_row(cursor, row)["check_date"] for row in rows]
 
@@ -1081,7 +1043,6 @@ def get_today_checkins(user_id: str) -> list:
     """, (today, user_id))
 
     rows = cursor.fetchall()
-    conn.close()
 
     return [dict_row(cursor, row) for row in rows]
 
@@ -1099,7 +1060,6 @@ def get_habit_streak(user_id: str, habit_id: int) -> int:
 
     rows = cursor.fetchall()
     rows_dict = [dict_row(cursor, row) for row in rows]
-    conn.close()
 
     if not rows_dict:
         return 0
@@ -1153,7 +1113,6 @@ def get_habit_stats(user_id: str, habit_id: int, year: int = None, month: int = 
 
     row = cursor.fetchone()
     result = dict_row(cursor, row)
-    conn.close()
 
     checked_days = result["count"]
 
@@ -1195,7 +1154,6 @@ def create_expense_reminder(
 
     reminder_id = cursor.lastrowid
     conn.commit()
-    conn.close()
 
     return reminder_id
 
@@ -1212,7 +1170,6 @@ def get_expense_reminders(user_id: str) -> list:
     """, (user_id,))
 
     rows = cursor.fetchall()
-    conn.close()
 
     return [dict_row(cursor, row) for row in rows]
 
@@ -1228,7 +1185,6 @@ def get_expense_reminder_by_id(reminder_id: int, user_id: str) -> Optional[dict]
     """, (reminder_id, user_id))
 
     row = cursor.fetchone()
-    conn.close()
 
     return dict_row(cursor, row) if row else None
 
@@ -1251,8 +1207,7 @@ def update_expense_reminder(
     """, (reminder_id, user_id))
 
     if not cursor.fetchone():
-        conn.close()
-        return False
+            return False
 
     updates = []
     params = []
@@ -1271,8 +1226,7 @@ def update_expense_reminder(
         params.append(is_active)
 
     if not updates:
-        conn.close()
-        return True
+            return True
 
     params.extend([reminder_id, user_id])
     cursor.execute(f"""
@@ -1282,7 +1236,6 @@ def update_expense_reminder(
     """, params)
 
     conn.commit()
-    conn.close()
     return True
 
 
@@ -1297,7 +1250,6 @@ def delete_expense_reminder(reminder_id: int, user_id: str) -> bool:
 
     deleted = cursor.rowcount > 0
     conn.commit()
-    conn.close()
 
     return deleted
 
