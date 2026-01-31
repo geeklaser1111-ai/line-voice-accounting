@@ -7,20 +7,17 @@ from services.line_login import (
     exchange_code_for_token,
     get_user_profile
 )
-from database import create_session, get_session, delete_session
+from database import create_session, get_session, delete_session, save_oauth_state, verify_oauth_state
 from config import SESSION_COOKIE_NAME
 
 router = APIRouter(prefix="/auth", tags=["認證"])
-
-# 暫存 state（生產環境應使用 Redis）
-state_store: dict = {}
 
 
 @router.get("/login")
 async def login(request: Request):
     """導向 LINE Login 頁面"""
     state = generate_state()
-    state_store[state] = True  # 簡易存儲，生產環境應加過期時間
+    save_oauth_state(state)  # 存到資料庫
 
     login_url = get_login_url(state)
     return RedirectResponse(url=login_url)
@@ -33,11 +30,9 @@ async def callback(request: Request, code: str = None, state: str = None, error:
     if error:
         return RedirectResponse(url=f"/static/index.html?error={error}")
 
-    # 驗證 state
-    if not state or state not in state_store:
+    # 驗證 state（從資料庫）
+    if not state or not verify_oauth_state(state):
         return RedirectResponse(url="/static/index.html?error=invalid_state")
-
-    del state_store[state]
 
     # 交換 token
     token_data = await exchange_code_for_token(code)

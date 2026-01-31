@@ -152,6 +152,14 @@ def init_db():
         ON expense_reminders(user_id)
     """)
 
+    # OAuth State 暫存表
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS oauth_states (
+            state TEXT PRIMARY KEY,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     conn.commit()
 
 
@@ -1252,6 +1260,58 @@ def delete_expense_reminder(reminder_id: int, user_id: str) -> bool:
     conn.commit()
 
     return deleted
+
+
+# ============ OAuth State 相關函式 ============
+
+def save_oauth_state(state: str) -> bool:
+    """儲存 OAuth state"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            INSERT INTO oauth_states (state) VALUES (?)
+        """, (state,))
+        conn.commit()
+        return True
+    except Exception:
+        return False
+
+
+def verify_oauth_state(state: str) -> bool:
+    """驗證並刪除 OAuth state"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 先檢查是否存在
+    cursor.execute("""
+        SELECT state FROM oauth_states WHERE state = ?
+    """, (state,))
+
+    row = cursor.fetchone()
+    if not row:
+        return False
+
+    # 刪除已使用的 state
+    cursor.execute("""
+        DELETE FROM oauth_states WHERE state = ?
+    """, (state,))
+    conn.commit()
+
+    return True
+
+
+def cleanup_expired_states():
+    """清理超過 10 分鐘的 state"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM oauth_states
+        WHERE created_at < datetime('now', '-10 minutes')
+    """)
+    conn.commit()
 
 
 # 初始化資料庫
