@@ -188,10 +188,12 @@ def get_session(session_id: str) -> Optional[dict]:
     conn = get_connection()
     cursor = conn.cursor()
 
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     cursor.execute("""
         SELECT * FROM user_sessions
-        WHERE session_id = ? AND expires_at > datetime('now')
-    """, (session_id,))
+        WHERE session_id = ? AND expires_at > ?
+    """, (session_id, now_str))
 
     row = cursor.fetchone()
     result = dict_row(cursor, row)
