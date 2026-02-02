@@ -60,7 +60,8 @@ async def callback(request: Request, code: str = None, state: str = None, error:
         httponly=True,
         secure=True,  # HTTPS 必須
         max_age=7 * 24 * 60 * 60,  # 7 天
-        samesite="lax"
+        samesite="none",  # 跨站請求也發送
+        path="/"  # 全站有效
     )
 
     return response
